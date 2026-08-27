@@ -74,12 +74,29 @@ export const services: Service[] = [
   },
   {
     slug: "massagem-shiatsu",
-    name: "Massagem Shiatsu, Auriculoterapia e Reflexologia",
+    name: "Massagem Shiatsu",
     category: "terapia",
     schedule: "Individual — marcação prévia · com Sónia",
     priceLabel: "Preço sob consulta",
-    description:
-      "Sessões terapêuticas de shiatsu, auriculoterapia e reflexologia com a terapeuta Sónia.",
+    description: "Sessão de massagem shiatsu com a terapeuta Sónia.",
+    bookable: true,
+  },
+  {
+    slug: "auriculoterapia",
+    name: "Auriculoterapia",
+    category: "terapia",
+    schedule: "Individual — marcação prévia · com Sónia",
+    priceLabel: "Preço sob consulta",
+    description: "Sessão de auriculoterapia com a terapeuta Sónia.",
+    bookable: true,
+  },
+  {
+    slug: "reflexologia",
+    name: "Reflexologia",
+    category: "terapia",
+    schedule: "Individual — marcação prévia · com Sónia",
+    priceLabel: "Preço sob consulta",
+    description: "Sessão de reflexologia com a terapeuta Sónia.",
     bookable: true,
   },
 

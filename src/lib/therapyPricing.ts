@@ -8,6 +8,8 @@ export const therapyPricing: Record<string, TherapyConfig> = {
   "terapia-do-som": { priceCents: 3500, durationMinutes: 60 },
   "tsa-lung-healing": { priceCents: 3500, durationMinutes: 60 },
   "massagem-shiatsu": { priceCents: 3500, durationMinutes: 45 },
+  "auriculoterapia": { priceCents: 3500, durationMinutes: 45 },
+  "reflexologia": { priceCents: 3500, durationMinutes: 45 },
 };
 
 export function getTherapyPriceCents(slug: string): number | undefined {
