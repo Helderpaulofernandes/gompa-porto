@@ -7,16 +7,20 @@ import AvailabilityCalendar, { type TimeEntry } from "@/components/AvailabilityC
 import { formatPrice } from "@/lib/products";
 
 type SlotApi = {
-  id: string;
   isoDate: string;
+  teacherId: string;
   teacherName: string;
+  roomId: string;
   available: boolean;
 };
 
 type ApiResponse = {
-  priceCents: number | null;
+  priceCents: number;
+  durationMinutes: number;
   slots: SlotApi[];
 };
+
+const KEY_SEP = "::";
 
 export default function TherapyCalendar({ serviceSlug, className }: { serviceSlug: string; className: string }) {
   const [data, setData] = useState<ApiResponse | null>(null);
@@ -38,13 +42,14 @@ export default function TherapyCalendar({ serviceSlug, className }: { serviceSlu
 
   async function handleReserve() {
     if (!selected || !name || !email) return;
+    const [teacherId, roomId, isoDate] = selected.key.split(KEY_SEP);
     setSubmitting(true);
     setError("");
     try {
       const res = await fetch("/api/terapias/reservar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slotId: selected.key, name, email, phone }),
+        body: JSON.stringify({ serviceSlug, teacherId, roomId, isoDate, name, email, phone }),
       });
       const json = await res.json();
       if (!res.ok || !json.url) throw new Error(json.error ?? "Não foi possível processar a reserva.");
@@ -65,7 +70,7 @@ export default function TherapyCalendar({ serviceSlug, className }: { serviceSlu
     const date = new Date(s.isoDate);
     const time = formatInTimeZone(date, "Europe/Lisbon", "HH:mm", { locale: pt });
     return {
-      key: s.id,
+      key: [s.teacherId, s.roomId, s.isoDate].join(KEY_SEP),
       date,
       label: s.available ? `${time} — ${s.teacherName}` : time,
       available: s.available,
@@ -121,15 +126,9 @@ export default function TherapyCalendar({ serviceSlug, className }: { serviceSlu
             disabled={!name || !email || submitting}
             className="mt-4 w-full rounded-full bg-maroon px-5 py-2.5 text-sm font-semibold text-cream transition hover:bg-maroon-dark disabled:opacity-60 sm:w-auto"
           >
-            {submitting
-              ? "A processar…"
-              : data.priceCents
-                ? `Reservar e pagar — ${formatPrice(data.priceCents)}`
-                : "Reservar"}
+            {submitting ? "A processar…" : `Reservar e pagar — ${formatPrice(data.priceCents)}`}
           </button>
-          {data.priceCents && (
-            <p className="mt-2 text-xs text-ink/50">* Valor provisório, sujeito a confirmação.</p>
-          )}
+          <p className="mt-2 text-xs text-ink/50">* Valor provisório, sujeito a confirmação.</p>
         </div>
       )}
     </div>

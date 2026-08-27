@@ -1,14 +1,19 @@
 /**
- * Preços provisórios das terapias com reserva por calendário (placeholder —
- * substitua pelos valores reais). Usa-se o mesmo valor do antigo voucher de
- * terapia individual como ponto de partida.
+ * Preços e durações provisórios das terapias com reserva por calendário
+ * (placeholder — substitua pelos valores reais).
  */
-export const therapyPricing: Record<string, number> = {
-  "terapia-do-som": 3500,
-  "tsa-lung-healing": 3500,
-  "massagem-shiatsu": 3500,
+export type TherapyConfig = { priceCents: number; durationMinutes: number };
+
+export const therapyPricing: Record<string, TherapyConfig> = {
+  "terapia-do-som": { priceCents: 3500, durationMinutes: 60 },
+  "tsa-lung-healing": { priceCents: 3500, durationMinutes: 60 },
+  "massagem-shiatsu": { priceCents: 3500, durationMinutes: 45 },
 };
 
 export function getTherapyPriceCents(slug: string): number | undefined {
-  return therapyPricing[slug];
+  return therapyPricing[slug]?.priceCents;
+}
+
+export function getTherapyDurationMinutes(slug: string): number | undefined {
+  return therapyPricing[slug]?.durationMinutes;
 }

@@ -60,8 +60,10 @@ model ClassDefinition {
   dropInPriceCents Int
   durationMinutes  Int            @default(60)
   active           Boolean        @default(true)
+  roomId           String?
   createdAt        DateTime       @default(now())
   slots            ClassSlotDef[]
+  room             Room?          @relation(fields: [roomId], references: [id])
 }
 
 model ClassSlotDef {
@@ -73,19 +75,45 @@ model ClassSlotDef {
 }
 
 model Teacher {
-  id        String        @id @default(cuid())
+  id        String               @id @default(cuid())
   name      String
-  active    Boolean       @default(true)
-  createdAt DateTime      @default(now())
+  active    Boolean              @default(true)
+  services  String[]             @default([])
+  createdAt DateTime             @default(now())
   slots     TherapySlot[]
+  windows   AvailabilityWindow[]
 }
 
 model Room {
-  id        String        @id @default(cuid())
+  id        String               @id @default(cuid())
   name      String
-  active    Boolean       @default(true)
-  createdAt DateTime      @default(now())
+  active    Boolean              @default(true)
+  createdAt DateTime             @default(now())
   slots     TherapySlot[]
+  windows   AvailabilityWindow[]
+  classes   ClassDefinition[]
+}
+
+model AvailabilityWindow {
+  id        String   @id @default(cuid())
+  teacherId String
+  roomId    String
+  weekday   Int
+  startTime String
+  endTime   String
+  createdAt DateTime @default(now())
+
+  teacher Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  room    Room    @relation(fields: [roomId], references: [id])
+
+  @@index([teacherId, weekday])
+}
+
+model TherapySettings {
+  id           String  @id @default("singleton")
+  breakMinutes Int     @default(15)
+  lunchStart   String?
+  lunchEnd     String?
 }
 
 model TherapySlot {
@@ -106,4 +134,6 @@ model TherapySlot {
   room    Room    @relation(fields: [roomId], references: [id])
 
   @@index([serviceSlug, date])
+  @@index([teacherId, date])
+  @@index([roomId, date])
 }

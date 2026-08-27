@@ -57,28 +57,37 @@ Tog Chöd e as restantes ofertas (cursos, retiros, eventos mensais) não têm ho
 preço definido (são "por marcação" / "sob consulta" / "datas a anunciar"), por isso mantêm o
 formulário de marcação simples em vez do calendário.
 
-### Terapias: professores, salas e horários (backoffice)
+### Terapias: motor de disponibilidade (janelas + intervalo + almoço + salas)
 
-Ao contrário das aulas (horário semanal fixo), as terapias são "por marcação": o horário
-depende de quem está disponível, em que sala, e quando. Em `/admin`:
+As terapias não têm horário fixo como as aulas — dependem de quando cada professor está
+disponível. Em vez de criar horários um a um, em `/admin` define-se a disponibilidade geral e
+o site calcula os horários concretos automaticamente:
 
-- **Professores** — Anu Biak e Sónia já estão criados (via `prisma/seed-therapy.mjs`); pode
-  adicionar mais, editar o nome, desativar sem apagar (mantém o histórico de sessões já
-  feitas), ou remover definitivamente (só permitido se ainda não tiver horários associados).
-- **Salas** — igual aos professores: criar, editar, desativar ou remover (idem, só remove se
-  não tiver horários associados). "Sala de Terapias" já está criada.
-- **Criar Horário Disponível** — escolhe a terapia, o professor, a sala, o dia e a hora; esse
-  horário aparece de imediato em `/terapias` como uma data marcada a dourado no calendário do
-  cliente. Ao ser reservado e pago, o horário fica "cross-off" automaticamente (estado muda
-  para `pendente` e depois `confirmado` via webhook do Stripe) e deixa de aparecer como
-  disponível a outros clientes — a tabela `TherapySlot` funciona simultaneamente como a agenda
-  e o registo da marcação.
+- **Professores** — Anu Biak e Sónia já estão criados. Cada professor tem uma lista de
+  terapias que realiza (checkboxes ao editar); só entram no cálculo de disponibilidade para
+  essas terapias. Pode adicionar mais professores, editar o nome/terapias, desativar sem
+  apagar (mantém o histórico), ou remover definitivamente (só se não tiver horários
+  associados).
+- **Salas** — igual aos professores (criar, editar, desativar, remover). "Sala de Terapias" e
+  "Salao de Grupo" já existem; as aulas de grupo também podem ser associadas a uma sala (ver
+  abaixo), para que o sistema saiba que essa sala está ocupada nesse horário.
+- **Intervalos e Pausa de Almoço** — um intervalo padrão (minutos) inserido a seguir a cada
+  sessão, e uma pausa de almoço opcional (início/fim) que bloqueia esse período em todas as
+  janelas, todos os dias.
+- **Janelas de Disponibilidade** — ex. "Anu, Sala de Terapias, Quarta-feira, 14:00–18:00".
+  Isto é tudo o que é preciso definir; o motor (`src/lib/therapyAvailability.ts`) gera os
+  horários reservváveis dentro da janela, espaçados por duração-da-terapia + intervalo (ex.:
+  60 min + 15 min de intervalo = horários às 14:00, 15:15, 16:30), e marca como indisponível
+  qualquer horário que:
+  - já tenha uma marcação (do mesmo professor OU da mesma sala) — o tempo "trancado" por uma
+    marcação é a duração da terapia + o intervalo padrão;
+  - caia dentro da pausa de almoço;
+  - coincida com uma aula de grupo com horário fixo na mesma sala (ex.: se a Sala de Grupo
+    está ocupada pelo Yoga Tibetano das 19h30 às 21h00 à terça-feira, nenhuma terapia pode
+    ser marcada nessa sala nesse intervalo, seja qual for o professor).
 
-O preço por sessão está em `src/lib/therapyPricing.ts` (atualmente 35€ para todas, um valor
-provisório — ver comentário no ficheiro). A atribuição de quem faz cada terapia é feita
-livremente ao criar cada horário (não há uma regra fixa "só a Sónia pode fazer X"), mas hoje
-em dia a Gompa Porto trabalha com Anu em Terapia do Som/Tsa Lung Healing e Sónia em
-Shiatsu/Auriculoterapia/Reflexologia.
+Duração e preço de cada terapia estão em `src/lib/therapyPricing.ts` (valores provisórios —
+ver comentário no ficheiro).
 
 O componente `AvailabilityCalendar` (mês com dias a dourado quando há vagas, lista de horários
 do dia selecionado) é partilhado entre `/horarios` e `/terapias` — dias/horas sem vagas

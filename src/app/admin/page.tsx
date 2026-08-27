@@ -24,24 +24,32 @@ export default async function AdminPage() {
     );
   }
 
-  const [bookings, orders, reservations, classes, teachers, rooms, therapySlots] = await Promise.all([
-    prisma.booking.findMany({ orderBy: { createdAt: "desc" }, take: 100 }),
-    prisma.order.findMany({ orderBy: { createdAt: "desc" }, take: 100 }),
-    prisma.seatReservation.findMany({
-      where: { classDate: { gte: new Date() } },
-      orderBy: { classDate: "asc" },
-      take: 100,
-    }),
-    getAllClasses(),
-    prisma.teacher.findMany({ orderBy: { createdAt: "asc" } }),
-    prisma.room.findMany({ orderBy: { createdAt: "asc" } }),
-    prisma.therapySlot.findMany({
-      where: { date: { gte: new Date() } },
-      orderBy: { date: "asc" },
-      include: { teacher: true, room: true },
-      take: 100,
-    }),
-  ]);
+  const [bookings, orders, reservations, classes, teachers, rooms, therapySlots, windows, settingsRow] =
+    await Promise.all([
+      prisma.booking.findMany({ orderBy: { createdAt: "desc" }, take: 100 }),
+      prisma.order.findMany({ orderBy: { createdAt: "desc" }, take: 100 }),
+      prisma.seatReservation.findMany({
+        where: { classDate: { gte: new Date() } },
+        orderBy: { classDate: "asc" },
+        take: 100,
+      }),
+      getAllClasses(),
+      prisma.teacher.findMany({ orderBy: { createdAt: "asc" } }),
+      prisma.room.findMany({ orderBy: { createdAt: "asc" } }),
+      prisma.therapySlot.findMany({
+        where: { date: { gte: new Date() } },
+        orderBy: { date: "asc" },
+        include: { teacher: true, room: true },
+        take: 100,
+      }),
+      prisma.availabilityWindow.findMany({
+        include: { teacher: true, room: true },
+        orderBy: [{ weekday: "asc" }, { startTime: "asc" }],
+      }),
+      prisma.therapySettings.findUnique({ where: { id: "singleton" } }),
+    ]);
+
+  const settings = settingsRow ?? { breakMinutes: 15, lunchStart: null, lunchEnd: null };
 
   const therapyServices = services
     .filter((s) => s.category === "terapia")
@@ -63,7 +71,7 @@ export default async function AdminPage() {
           Aparecem de imediato no calendário de reserva em /horarios.
         </p>
         <div className="mt-4">
-          <AdminClassManager classes={classes} />
+          <AdminClassManager classes={classes} rooms={rooms} />
         </div>
       </section>
 
@@ -74,7 +82,13 @@ export default async function AdminPage() {
           reservados automaticamente quando alguém paga.
         </p>
         <div className="mt-4">
-          <AdminTherapyManager teachers={teachers} rooms={rooms} therapyServices={therapyServices} />
+          <AdminTherapyManager
+            teachers={teachers}
+            rooms={rooms}
+            therapyServices={therapyServices}
+            windows={windows}
+            settings={settings}
+          />
         </div>
 
         <div className="mt-6 overflow-x-auto rounded-2xl border border-gold/30">
@@ -109,7 +123,7 @@ export default async function AdminPage() {
                   </td>
                   <td className="px-4 py-3">{s.status}</td>
                   <td className="px-4 py-3">
-                    {s.status === "disponivel" && <AdminRemoveSlotButton id={s.id} />}
+                    <AdminRemoveSlotButton id={s.id} />
                   </td>
                 </tr>
               ))}

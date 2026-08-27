@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 const WEEKDAYS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
 type Slot = { id: string; weekday: number; time: string };
+type RoomOption = { id: string; name: string };
 type ClassDef = {
   id: string;
   slug: string;
@@ -15,13 +16,15 @@ type ClassDef = {
   dropInPriceCents: number;
   durationMinutes: number;
   active: boolean;
+  roomId: string | null;
   slots: Slot[];
 };
 
-function ExistingClassRow({ classDef }: { classDef: ClassDef }) {
+function ExistingClassRow({ classDef, rooms }: { classDef: ClassDef; rooms: RoomOption[] }) {
   const router = useRouter();
   const [capacity, setCapacity] = useState(classDef.capacity);
   const [priceEuros, setPriceEuros] = useState((classDef.dropInPriceCents / 100).toFixed(2));
+  const [roomId, setRoomId] = useState(classDef.roomId ?? "");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -39,6 +42,7 @@ function ExistingClassRow({ classDef }: { classDef: ClassDef }) {
         id: classDef.id,
         capacity,
         dropInPriceCents: Math.round(parseFloat(priceEuros || "0") * 100),
+        roomId: roomId || null,
       }),
     });
     setSaving(false);
@@ -129,6 +133,21 @@ function ExistingClassRow({ classDef }: { classDef: ClassDef }) {
             className="w-20 rounded-lg border border-gold/40 px-2 py-1 text-sm"
           />
         </label>
+        <label className="text-xs text-ink/60">
+          Sala:{" "}
+          <select
+            value={roomId}
+            onChange={(e) => setRoomId(e.target.value)}
+            className="rounded-lg border border-gold/40 px-2 py-1 text-sm"
+          >
+            <option value="">Sem sala definida</option>
+            {rooms.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name}
+              </option>
+            ))}
+          </select>
+        </label>
         <button
           onClick={saveMeta}
           disabled={saving}
@@ -181,13 +200,14 @@ function ExistingClassRow({ classDef }: { classDef: ClassDef }) {
   );
 }
 
-export default function AdminClassManager({ classes }: { classes: ClassDef[] }) {
+export default function AdminClassManager({ classes, rooms }: { classes: ClassDef[]; rooms: RoomOption[] }) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [capacity, setCapacity] = useState(14);
   const [priceEuros, setPriceEuros] = useState("9.00");
   const [duration, setDuration] = useState(60);
+  const [roomId, setRoomId] = useState("");
   const [slots, setSlots] = useState<{ weekday: number; time: string }[]>([{ weekday: 2, time: "19:30" }]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -212,6 +232,7 @@ export default function AdminClassManager({ classes }: { classes: ClassDef[] }) 
           capacity,
           dropInPriceCents: Math.round(parseFloat(priceEuros || "0") * 100),
           durationMinutes: duration,
+          roomId: roomId || null,
           slots,
         }),
       });
@@ -233,7 +254,7 @@ export default function AdminClassManager({ classes }: { classes: ClassDef[] }) 
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-2">
         {classes.map((c) => (
-          <ExistingClassRow key={c.id} classDef={c} />
+          <ExistingClassRow key={c.id} classDef={c} rooms={rooms} />
         ))}
       </div>
 
@@ -282,6 +303,21 @@ export default function AdminClassManager({ classes }: { classes: ClassDef[] }) 
               onChange={(e) => setDuration(Number(e.target.value))}
               className="w-20 rounded-lg border border-gold/40 px-2 py-1 text-sm"
             />
+          </label>
+          <label className="text-xs text-ink/60">
+            Sala:{" "}
+            <select
+              value={roomId}
+              onChange={(e) => setRoomId(e.target.value)}
+              className="rounded-lg border border-gold/40 px-2 py-1 text-sm"
+            >
+              <option value="">Sem sala definida</option>
+              {rooms.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
           </label>
         </div>
 

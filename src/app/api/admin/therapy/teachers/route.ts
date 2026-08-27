@@ -11,7 +11,10 @@ export async function GET() {
   return NextResponse.json({ teachers });
 }
 
-const bodySchema = z.object({ name: z.string().min(2) });
+const bodySchema = z.object({
+  name: z.string().min(2),
+  services: z.array(z.string()).default([]),
+});
 
 export async function POST(req: NextRequest) {
   if (!(await isAdminAuthenticated())) {
@@ -21,7 +24,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Nome inválido." }, { status: 400 });
   }
-  const teacher = await prisma.teacher.create({ data: { name: parsed.data.name } });
+  const teacher = await prisma.teacher.create({ data: parsed.data });
   return NextResponse.json({ teacher });
 }
 
@@ -29,6 +32,7 @@ const patchSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(2).optional(),
   active: z.boolean().optional(),
+  services: z.array(z.string()).optional(),
 });
 
 export async function PATCH(req: NextRequest) {

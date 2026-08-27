@@ -3,10 +3,14 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
 import { getServiceBySlug } from "@/lib/services";
-import { getTherapyPriceCents } from "@/lib/therapyPricing";
+import { getTherapyPriceCents, getTherapyDurationMinutes } from "@/lib/therapyPricing";
+import { computeTherapyCandidates } from "@/lib/therapyAvailability";
 
 const bodySchema = z.object({
-  slotId: z.string().min(1),
+  serviceSlug: z.string().min(1),
+  teacherId: z.string().min(1),
+  roomId: z.string().min(1),
+  isoDate: z.string().min(1),
   name: z.string().min(2),
   email: z.string().email(),
   phone: z.string().optional(),
@@ -17,24 +21,27 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
   }
-  const { slotId, name, email, phone } = parsed.data;
+  const { serviceSlug, teacherId, roomId, isoDate, name, email, phone } = parsed.data;
 
-  const slot = await prisma.therapySlot.findUnique({ where: { id: slotId }, include: { teacher: true } });
-  if (!slot) {
-    return NextResponse.json({ error: "Horário não encontrado." }, { status: 404 });
-  }
-  if (slot.status !== "disponivel" || slot.date.getTime() <= Date.now()) {
-    return NextResponse.json({ error: "Este horário já não está disponível." }, { status: 409 });
-  }
-
-  const service = getServiceBySlug(slot.serviceSlug);
-  const priceCents = getTherapyPriceCents(slot.serviceSlug);
-  if (!service || !priceCents) {
+  const service = getServiceBySlug(serviceSlug);
+  const priceCents = getTherapyPriceCents(serviceSlug);
+  const durationMinutes = getTherapyDurationMinutes(serviceSlug);
+  if (!service || !priceCents || !durationMinutes) {
     return NextResponse.json({ error: "Terapia não encontrada." }, { status: 404 });
   }
 
+  // Re-validate against the current computed availability to prevent double-booking.
+  const candidates = await computeTherapyCandidates(serviceSlug);
+  const match = candidates.find(
+    (c) => c.isoDate === isoDate && c.teacherId === teacherId && c.roomId === roomId
+  );
+  if (!match || !match.available) {
+    return NextResponse.json({ error: "Este horário já não está disponível." }, { status: 409 });
+  }
+
+  const date = new Date(isoDate);
   const origin = req.headers.get("origin") ?? process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  const dateLabel = slot.date.toLocaleString("pt-PT", {
+  const dateLabel = date.toLocaleString("pt-PT", {
     timeZone: "Europe/Lisbon",
     weekday: "long",
     day: "numeric",
@@ -55,7 +62,7 @@ export async function POST(req: NextRequest) {
             unit_amount: priceCents,
             product_data: {
               name: `${service.name} — ${dateLabel}`,
-              description: `Com ${slot.teacher.name}`,
+              description: `Com ${match.teacherName}`,
             },
           },
           quantity: 1,
@@ -63,23 +70,36 @@ export async function POST(req: NextRequest) {
       ],
       success_url: `${origin}/sucesso?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/terapias`,
-      metadata: { kind: "terapia", slotId: slot.id, serviceSlug: slot.serviceSlug },
+      metadata: { kind: "terapia", serviceSlug },
     });
 
-    const claimed = await prisma.therapySlot.updateMany({
-      where: { id: slotId, status: "disponivel" },
+    // Create the booking row now, atomically guarded by re-checking for an exact clash
+    // right before insert to shrink (not eliminate) the race window.
+    const clash = await prisma.therapySlot.findFirst({
+      where: {
+        teacherId,
+        date,
+        status: { in: ["pendente", "confirmado"] },
+      },
+    });
+    if (clash) {
+      return NextResponse.json({ error: "Este horário acabou de ser reservado por outra pessoa." }, { status: 409 });
+    }
+
+    await prisma.therapySlot.create({
       data: {
-        status: "pendente",
+        teacherId,
+        roomId,
+        serviceSlug,
+        date,
+        durationMinutes,
         clientName: name,
         clientEmail: email,
         clientPhone: phone || null,
         stripeSessionId: session.id,
+        status: "pendente",
       },
     });
-
-    if (claimed.count === 0) {
-      return NextResponse.json({ error: "Este horário acabou de ser reservado por outra pessoa." }, { status: 409 });
-    }
 
     return NextResponse.json({ url: session.url });
   } catch (err) {

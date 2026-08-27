@@ -15,6 +15,7 @@ const createSchema = z.object({
   capacity: z.number().int().min(1).max(500),
   dropInPriceCents: z.number().int().min(0),
   durationMinutes: z.number().int().min(15).max(240).default(60),
+  roomId: z.string().min(1).nullable().optional(),
   slots: z.array(slotSchema).min(1),
 });
 
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
   }
-  const { name, description, capacity, dropInPriceCents, durationMinutes, slots } = parsed.data;
+  const { name, description, capacity, dropInPriceCents, durationMinutes, roomId, slots } = parsed.data;
   const slug = await uniqueSlug(name);
 
   const classDef = await prisma.classDefinition.create({
@@ -37,6 +38,7 @@ export async function POST(req: NextRequest) {
       capacity,
       dropInPriceCents,
       durationMinutes,
+      roomId: roomId || null,
       slots: { create: slots },
     },
     include: { slots: true },
@@ -51,6 +53,7 @@ const patchSchema = z.object({
   description: z.string().min(1).optional(),
   capacity: z.number().int().min(1).max(500).optional(),
   dropInPriceCents: z.number().int().min(0).optional(),
+  roomId: z.string().min(1).nullable().optional(),
   active: z.boolean().optional(),
 });
 
