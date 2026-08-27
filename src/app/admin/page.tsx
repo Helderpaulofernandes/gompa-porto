@@ -3,13 +3,12 @@ import { prisma } from "@/lib/prisma";
 import AdminLoginForm from "@/components/AdminLoginForm";
 import AdminLogoutButton from "@/components/AdminLogoutButton";
 import { formatPrice } from "@/lib/products";
-import { getServiceBySlug } from "@/lib/services";
+import { getServiceBySlug, services } from "@/lib/services";
 import { formatLisbon } from "@/lib/occurrences";
-import { classSchedules, getAllEffectiveCapacities } from "@/lib/classSchedule";
-import AdminClassCapacity from "@/components/AdminClassCapacity";
+import { getAllClasses } from "@/lib/classSchedule";
+import AdminClassManager from "@/components/AdminClassManager";
 import AdminTherapyManager from "@/components/AdminTherapyManager";
 import AdminRemoveSlotButton from "@/components/AdminRemoveSlotButton";
-import { services } from "@/lib/services";
 
 export const metadata = { title: "Admin — Gompa Porto" };
 export const dynamic = "force-dynamic";
@@ -25,7 +24,7 @@ export default async function AdminPage() {
     );
   }
 
-  const [bookings, orders, reservations, capacities, teachers, rooms, therapySlots] = await Promise.all([
+  const [bookings, orders, reservations, classes, teachers, rooms, therapySlots] = await Promise.all([
     prisma.booking.findMany({ orderBy: { createdAt: "desc" }, take: 100 }),
     prisma.order.findMany({ orderBy: { createdAt: "desc" }, take: 100 }),
     prisma.seatReservation.findMany({
@@ -33,7 +32,7 @@ export default async function AdminPage() {
       orderBy: { classDate: "asc" },
       take: 100,
     }),
-    getAllEffectiveCapacities(),
+    getAllClasses(),
     prisma.teacher.findMany({ orderBy: { createdAt: "asc" } }),
     prisma.room.findMany({ orderBy: { createdAt: "asc" } }),
     prisma.therapySlot.findMany({
@@ -48,6 +47,8 @@ export default async function AdminPage() {
     .filter((s) => s.category === "terapia")
     .map((s) => ({ slug: s.slug, name: s.name }));
 
+  const classNameBySlug = new Map(classes.map((c) => [c.slug, c.name]));
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-12">
       <div className="flex items-center justify-between">
@@ -56,19 +57,13 @@ export default async function AdminPage() {
       </div>
 
       <section className="mt-10">
-        <h2 className="text-xl font-semibold text-ink">Capacidade das Aulas</h2>
+        <h2 className="text-xl font-semibold text-ink">Aulas Semanais</h2>
         <p className="mt-1 text-sm text-ink/60">
-          Número máximo de lugares por aula, usado no calendário de reserva em /horarios.
+          Crie novas aulas, ajuste lugares/preço das existentes, ou gira os horários semanais.
+          Aparecem de imediato no calendário de reserva em /horarios.
         </p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          {classSchedules.map((c) => (
-            <AdminClassCapacity
-              key={c.slug}
-              slug={c.slug}
-              name={getServiceBySlug(c.slug)?.name ?? c.slug}
-              capacity={capacities[c.slug] ?? c.defaultCapacity}
-            />
-          ))}
+        <div className="mt-4">
+          <AdminClassManager classes={classes} />
         </div>
       </section>
 
@@ -193,7 +188,7 @@ export default async function AdminPage() {
             <tbody>
               {reservations.map((r) => (
                 <tr key={r.id} className="border-t border-gold/20">
-                  <td className="px-4 py-3">{getServiceBySlug(r.classSlug)?.name ?? r.classSlug}</td>
+                  <td className="px-4 py-3">{classNameBySlug.get(r.classSlug) ?? r.classSlug}</td>
                   <td className="px-4 py-3 whitespace-nowrap">{formatLisbon(r.classDate)}</td>
                   <td className="px-4 py-3">{r.name}</td>
                   <td className="px-4 py-3">

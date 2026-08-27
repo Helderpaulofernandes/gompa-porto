@@ -38,8 +38,14 @@ export async function POST(req: NextRequest) {
   const { teacherId, roomId, serviceSlug, date, time, durationMinutes } = parsed.data;
 
   const slotDate = fromZonedTime(`${date}T${time}:00`, TIME_ZONE);
-  if (Number.isNaN(slotDate.getTime()) || slotDate.getTime() <= Date.now()) {
-    return NextResponse.json({ error: "Data/hora inválida." }, { status: 400 });
+  if (Number.isNaN(slotDate.getTime())) {
+    return NextResponse.json({ error: "Data ou hora em falta ou com formato inválido." }, { status: 400 });
+  }
+  if (slotDate.getTime() <= Date.now()) {
+    return NextResponse.json(
+      { error: "Essa data/hora já passou — escolha um dia e hora no futuro." },
+      { status: 400 }
+    );
   }
 
   const slot = await prisma.therapySlot.create({

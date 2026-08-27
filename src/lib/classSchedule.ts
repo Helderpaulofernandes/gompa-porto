@@ -1,71 +1,63 @@
 import { prisma } from "@/lib/prisma";
 
-/**
- * Horário estruturado das aulas com calendário de reserva de lugar.
- * weekday: 0 = domingo ... 6 = sábado. time: "HH:mm".
- *
- * defaultCapacity é usada até haver um valor definido no painel /admin
- * (tabela ClassConfig) — depois disso, o valor do admin tem prioridade.
- *
- * dropInPriceCents é o preço de reservar UMA aula avulsa neste calendário.
- * Está calculado ~15% acima do valor por aula do plano "Iniciante"
- * (30€ / 4 aulas = 7,50€ → +15% = 8,63€, arredondado a 9,00€), para que
- * reservar aula a aula fique sempre mais caro do que assinar um plano.
- * Ajuste livremente em conjunto com plans.ts.
- */
-export type WeeklySlot = { weekday: number; time: string };
+export type ClassSlot = { weekday: number; time: string };
 
-export type ClassScheduleDef = {
-  slug: string;
-  defaultCapacity: number;
-  slots: WeeklySlot[];
-  dropInPriceCents: number;
-  durationMinutes: number;
-};
-
-export const classSchedules: ClassScheduleDef[] = [
-  {
-    slug: "yoga-tibetano",
-    defaultCapacity: 14,
-    slots: [
-      { weekday: 2, time: "19:30" }, // terça
-      { weekday: 4, time: "19:30" }, // quinta
-      { weekday: 6, time: "10:00" }, // sábado
-    ],
-    dropInPriceCents: 900,
-    durationMinutes: 90,
-  },
-  {
-    slug: "pratica-meditacao",
-    defaultCapacity: 14,
-    slots: [
-      { weekday: 3, time: "19:30" }, // quarta
-    ],
-    dropInPriceCents: 900,
-    durationMinutes: 60,
-  },
-];
-
-export function getClassSchedule(slug: string) {
-  return classSchedules.find((c) => c.slug === slug);
-}
+const WEEKDAY_NAMES_PT = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
 /**
- * Capacidade efetiva de uma aula: o valor definido no painel /admin, se
- * existir, caso contrário o defaultCapacity definido acima no código.
+ * Aulas com horário semanal fixo e calendário de reserva são geridas
+ * inteiramente em /admin (tabelas ClassDefinition / ClassSlotDef) — não há
+ * mais nenhuma lista fixa no código. `dropInPriceCents` de cada aula deve
+ * ficar ~15% acima do valor por aula do plano mais barato (ver plans.ts),
+ * para que a assinatura seja sempre a opção mais vantajosa.
  */
-export async function getEffectiveCapacity(slug: string): Promise<number> {
-  const override = await prisma.classConfig.findUnique({ where: { slug } });
-  if (override) return override.capacity;
-  return getClassSchedule(slug)?.defaultCapacity ?? 0;
+export async function getActiveClasses() {
+  return prisma.classDefinition.findMany({
+    where: { active: true },
+    include: { slots: true },
+    orderBy: { createdAt: "asc" },
+  });
 }
 
-export async function getAllEffectiveCapacities(): Promise<Record<string, number>> {
-  const overrides = await prisma.classConfig.findMany();
-  const overrideMap = new Map(overrides.map((o) => [o.slug, o.capacity]));
-  const result: Record<string, number> = {};
-  for (const schedule of classSchedules) {
-    result[schedule.slug] = overrideMap.get(schedule.slug) ?? schedule.defaultCapacity;
+export async function getAllClasses() {
+  return prisma.classDefinition.findMany({
+    include: { slots: true },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
+export async function getClassBySlug(slug: string) {
+  return prisma.classDefinition.findUnique({ where: { slug }, include: { slots: true } });
+}
+
+export function scheduleTextFromSlots(slots: ClassSlot[]): string {
+  return slots
+    .slice()
+    .sort((a, b) => a.weekday - b.weekday || a.time.localeCompare(b.time))
+    .map((s) => `${WEEKDAY_NAMES_PT[s.weekday]}, ${s.time}`)
+    .join(" · ");
+}
+
+export function slugify(name: string): string {
+  const withoutDiacritics = Array.from(name.normalize("NFD"))
+    .filter((ch) => {
+      const code = ch.codePointAt(0) ?? 0;
+      return code < 0x0300 || code > 0x036f; // strip Unicode combining marks
+    })
+    .join("");
+  return withoutDiacritics
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+export async function uniqueSlug(name: string): Promise<string> {
+  const base = slugify(name) || "aula";
+  let candidate = base;
+  let i = 2;
+  while (await prisma.classDefinition.findUnique({ where: { slug: candidate } })) {
+    candidate = `${base}-${i}`;
+    i++;
   }
-  return result;
+  return candidate;
 }

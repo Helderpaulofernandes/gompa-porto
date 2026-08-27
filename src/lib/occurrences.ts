@@ -1,7 +1,7 @@
 import { addDays, addWeeks, startOfDay } from "date-fns";
 import { pt } from "date-fns/locale";
 import { fromZonedTime, toZonedTime, formatInTimeZone } from "date-fns-tz";
-import { getClassSchedule } from "@/lib/classSchedule";
+import type { ClassSlot } from "@/lib/classSchedule";
 
 const TIME_ZONE = "Europe/Lisbon";
 
@@ -21,16 +21,15 @@ export function formatLisbon(date: Date, pattern = "dd/MM/yyyy HH:mm") {
   return formatInTimeZone(date, TIME_ZONE, pattern, { locale: pt });
 }
 
-export function getUpcomingOccurrences(slug: string, weeksAhead = 5): Occurrence[] {
-  const schedule = getClassSchedule(slug);
-  if (!schedule) return [];
+export function getUpcomingOccurrences(slots: ClassSlot[], weeksAhead = 5): Occurrence[] {
+  if (slots.length === 0) return [];
 
   const now = new Date();
   const nowInLisbon = toZonedTime(now, TIME_ZONE);
   const occurrences: Occurrence[] = [];
 
   for (let week = 0; week < weeksAhead; week++) {
-    for (const slot of schedule.slots) {
+    for (const slot of slots) {
       const weekStart = addWeeks(startOfDay(nowInLisbon), week);
       const daysUntilWeekday = (slot.weekday - weekStart.getDay() + 7) % 7;
       const dayInLisbon = addDays(weekStart, daysUntilWeekday);

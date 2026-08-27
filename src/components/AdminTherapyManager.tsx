@@ -4,8 +4,96 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 type Teacher = { id: string; name: string; active: boolean };
-type Room = { id: string; name: string };
+type Room = { id: string; name: string; active: boolean };
 type ServiceOption = { slug: string; name: string };
+
+function EditableEntityRow({
+  entity,
+  endpoint,
+}: {
+  entity: { id: string; name: string; active: boolean };
+  endpoint: "teachers" | "rooms";
+}) {
+  const router = useRouter();
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(entity.name);
+  const [error, setError] = useState("");
+
+  async function patch(body: Record<string, unknown>) {
+    const res = await fetch(`/api/admin/therapy/${endpoint}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: entity.id, ...body }),
+    });
+    router.refresh();
+    return res;
+  }
+
+  async function saveName() {
+    if (!name.trim() || name === entity.name) {
+      setEditing(false);
+      return;
+    }
+    await patch({ name: name.trim() });
+    setEditing(false);
+  }
+
+  async function toggleActive() {
+    await patch({ active: !entity.active });
+  }
+
+  async function remove() {
+    setError("");
+    const res = await fetch(`/api/admin/therapy/${endpoint}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: entity.id }),
+    });
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}));
+      setError(json.error ?? "Erro ao remover.");
+      return;
+    }
+    router.refresh();
+  }
+
+  if (editing) {
+    return (
+      <li className="flex items-center gap-1 text-sm">
+        <input
+          autoFocus
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && saveName()}
+          className="flex-1 rounded-lg border border-gold/40 px-2 py-1 text-sm focus:border-maroon focus:outline-none"
+        />
+        <button onClick={saveName} className="text-xs font-semibold text-maroon hover:underline">
+          Guardar
+        </button>
+      </li>
+    );
+  }
+
+  return (
+    <li>
+      <div className="flex items-center justify-between text-sm">
+        <span className={entity.active ? "" : "text-ink/40 line-through"}>{entity.name}</span>
+        <div className="flex gap-2 text-xs font-semibold">
+          <button onClick={() => setEditing(true)} className="text-maroon hover:underline">
+            Editar
+          </button>
+          <button onClick={toggleActive} className="text-maroon hover:underline">
+            {entity.active ? "Desativar" : "Ativar"}
+          </button>
+          <button onClick={remove} className="text-red-600 hover:underline">
+            Remover
+          </button>
+        </div>
+      </div>
+      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+    </li>
+  );
+}
 
 export default function AdminTherapyManager({
   teachers,
@@ -24,7 +112,7 @@ export default function AdminTherapyManager({
   const [savingRoom, setSavingRoom] = useState(false);
 
   const [teacherId, setTeacherId] = useState(teachers.find((t) => t.active)?.id ?? "");
-  const [roomId, setRoomId] = useState(rooms[0]?.id ?? "");
+  const [roomId, setRoomId] = useState(rooms.find((r) => r.active)?.id ?? "");
   const [serviceSlug, setServiceSlug] = useState(therapyServices[0]?.slug ?? "");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
@@ -43,15 +131,6 @@ export default function AdminTherapyManager({
     });
     setNewTeacher("");
     setSavingTeacher(false);
-    router.refresh();
-  }
-
-  async function toggleTeacher(id: string, active: boolean) {
-    await fetch("/api/admin/therapy/teachers", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, active }),
-    });
     router.refresh();
   }
 
@@ -96,15 +175,7 @@ export default function AdminTherapyManager({
         <h3 className="text-sm font-semibold text-ink">Professores</h3>
         <ul className="mt-3 space-y-2">
           {teachers.map((t) => (
-            <li key={t.id} className="flex items-center justify-between text-sm">
-              <span className={t.active ? "" : "text-ink/40 line-through"}>{t.name}</span>
-              <button
-                onClick={() => toggleTeacher(t.id, !t.active)}
-                className="text-xs font-semibold text-maroon hover:underline"
-              >
-                {t.active ? "Desativar" : "Ativar"}
-              </button>
-            </li>
+            <EditableEntityRow key={t.id} entity={t} endpoint="teachers" />
           ))}
           {teachers.length === 0 && <li className="text-sm text-ink/50">Sem professores ainda.</li>}
         </ul>
@@ -129,9 +200,7 @@ export default function AdminTherapyManager({
         <h3 className="text-sm font-semibold text-ink">Salas</h3>
         <ul className="mt-3 space-y-2">
           {rooms.map((r) => (
-            <li key={r.id} className="text-sm">
-              {r.name}
-            </li>
+            <EditableEntityRow key={r.id} entity={r} endpoint="rooms" />
           ))}
           {rooms.length === 0 && <li className="text-sm text-ink/50">Sem salas ainda.</li>}
         </ul>
@@ -184,11 +253,13 @@ export default function AdminTherapyManager({
             onChange={(e) => setRoomId(e.target.value)}
             className="w-full rounded-lg border border-gold/40 px-2 py-1.5 text-sm focus:border-maroon focus:outline-none"
           >
-            {rooms.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-              </option>
-            ))}
+            {rooms
+              .filter((r) => r.active)
+              .map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
           </select>
           <div className="flex gap-2">
             <input

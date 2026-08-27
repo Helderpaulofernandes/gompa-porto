@@ -1,15 +1,41 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import ClassCard from "@/components/ClassCard";
-import { services } from "@/lib/services";
+import ClassCard, { type ClassCardData } from "@/components/ClassCard";
+import { services, getServiceBySlug } from "@/lib/services";
 import { site } from "@/lib/site";
+import { getActiveClasses, scheduleTextFromSlots } from "@/lib/classSchedule";
 
 export const metadata: Metadata = {
   title: `Horários — ${site.name}`,
 };
 
-export default function HorariosPage() {
-  const aulas = services.filter((s) => s.category === "aula");
+export const dynamic = "force-dynamic";
+
+export default async function HorariosPage() {
+  const classes = await getActiveClasses();
+
+  const scheduledCards: ClassCardData[] = classes.map((c) => ({
+    slug: c.slug,
+    name: c.name,
+    description: c.description,
+    scheduleText: scheduleTextFromSlots(c.slots),
+    photo: getServiceBySlug(c.slug)?.photo,
+    hasCalendar: true,
+  }));
+
+  const scheduledSlugs = new Set(classes.map((c) => c.slug));
+  const unscheduledCards: ClassCardData[] = services
+    .filter((s) => s.category === "aula" && !scheduledSlugs.has(s.slug))
+    .map((s) => ({
+      slug: s.slug,
+      name: s.name,
+      description: s.description,
+      scheduleText: s.schedule,
+      photo: s.photo,
+      hasCalendar: false,
+    }));
+
+  const cards = [...scheduledCards, ...unscheduledCards];
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-16">
@@ -21,7 +47,7 @@ export default function HorariosPage() {
       </p>
 
       <div className="mt-10 space-y-4">
-        {aulas.map((aula) => (
+        {cards.map((aula) => (
           <ClassCard key={aula.slug} aula={aula} />
         ))}
       </div>

@@ -25,7 +25,11 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ teacher });
 }
 
-const patchSchema = z.object({ id: z.string(), active: z.boolean() });
+const patchSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(2).optional(),
+  active: z.boolean().optional(),
+});
 
 export async function PATCH(req: NextRequest) {
   if (!(await isAdminAuthenticated())) {
@@ -35,9 +39,28 @@ export async function PATCH(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
   }
-  const teacher = await prisma.teacher.update({
-    where: { id: parsed.data.id },
-    data: { active: parsed.data.active },
-  });
+  const { id, ...data } = parsed.data;
+  const teacher = await prisma.teacher.update({ where: { id }, data });
   return NextResponse.json({ teacher });
+}
+
+const deleteSchema = z.object({ id: z.string().min(1) });
+
+export async function DELETE(req: NextRequest) {
+  if (!(await isAdminAuthenticated())) {
+    return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+  }
+  const parsed = deleteSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
+  }
+  const slotCount = await prisma.therapySlot.count({ where: { teacherId: parsed.data.id } });
+  if (slotCount > 0) {
+    return NextResponse.json(
+      { error: "Este professor já tem horários associados — desative-o em vez de o remover." },
+      { status: 409 }
+    );
+  }
+  await prisma.teacher.delete({ where: { id: parsed.data.id } });
+  return NextResponse.json({ ok: true });
 }

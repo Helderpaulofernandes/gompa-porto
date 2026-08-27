@@ -24,26 +24,34 @@ Conteúdo editável em `src/lib/`:
 - `services.ts` — aulas, terapias, eventos e cursos (nomes, horários, descrições)
 - `products.ts` — artigos da loja e preços
 - `plans.ts` — planos de assinatura e preços
-- `classSchedule.ts` — horário semanal, capacidade de lugares e preço da aula avulsa por
-  turma, usado pelo calendário de reserva em `/horarios`
+- `classSchedule.ts` — funções de leitura das aulas (as próprias aulas vivem na base de
+  dados, geridas em `/admin` — ver abaixo)
 
-**Os preços em `products.ts`, `plans.ts` e `classSchedule.ts` estão marcados como
-provisórios — edite antes de publicar.**
+**Os preços em `products.ts` e `plans.ts` estão marcados como provisórios — edite antes de
+publicar.**
 
-### Reserva de lugar com calendário
+### Aulas semanais e reserva de lugar com calendário (tudo em /admin)
 
-Em `/horarios`, o Yoga Tibetano e a Prática de Meditação (as aulas com horário semanal fixo)
-mostram um botão "Ver disponibilidade e reservar" que abre um calendário com as próximas
-datas e os lugares ainda disponíveis (capacidade definida em `classSchedule.ts`, contada a
-partir das reservas na tabela `SeatReservation`). Ao reservar, a pessoa escolhe entre:
+As aulas com horário semanal fixo (Yoga Tibetano, Prática de Meditação, e qualquer outra que
+crie) já não vivem no código — são geridas inteiramente em `/admin → Aulas Semanais`:
+
+- **Criar Nova Aula Semanal** — nome, descrição, lugares, preço da aula avulsa, duração e um
+  ou mais horários semanais (dia da semana + hora). Aparece de imediato em `/horarios`.
+- Em cada aula existente pode ajustar lugares e preço, desativar (deixa de aparecer no site
+  sem apagar o histórico) ou remover (só permitido se ainda não tiver reservas), e
+  adicionar/remover horários semanais individuais.
+
+Em `/horarios`, cada aula com horário mostra um botão "Ver disponibilidade e reservar" que
+abre um calendário com as próximas datas e os lugares ainda disponíveis (contados a partir da
+tabela `SeatReservation`). Ao reservar, a pessoa escolhe entre:
 
 - **Pagar só esta aula** — pagamento único pelo preço de aula avulsa (Stripe Checkout, modo
   `payment`).
 - **Assinar [plano] e reservar** — assina o plano de assinatura mensal indicado (por omissão,
   "Ilimitado") e a aula fica automaticamente reservada (Stripe Checkout, modo `subscription`).
 
-O preço da aula avulsa está calculado ~15% acima do valor por aula do plano mais barato, para
-que a assinatura seja sempre a opção mais vantajosa — ver comentário em `classSchedule.ts`.
+Sugestão de preço da aula avulsa: ~15% acima do valor por aula do plano mais barato, para que
+a assinatura seja sempre a opção mais vantajosa.
 
 Tog Chöd e as restantes ofertas (cursos, retiros, eventos mensais) não têm horário fixo nem
 preço definido (são "por marcação" / "sob consulta" / "datas a anunciar"), por isso mantêm o
@@ -55,10 +63,10 @@ Ao contrário das aulas (horário semanal fixo), as terapias são "por marcaçã
 depende de quem está disponível, em que sala, e quando. Em `/admin`:
 
 - **Professores** — Anu Biak e Sónia já estão criados (via `prisma/seed-therapy.mjs`); pode
-  adicionar mais ou desativar um professor sem o apagar (mantém o histórico de sessões já
-  feitas).
-- **Salas** — apenas a "Sala de Terapias" existe por agora; pode adicionar mais se o espaço
-  crescer.
+  adicionar mais, editar o nome, desativar sem apagar (mantém o histórico de sessões já
+  feitas), ou remover definitivamente (só permitido se ainda não tiver horários associados).
+- **Salas** — igual aos professores: criar, editar, desativar ou remover (idem, só remove se
+  não tiver horários associados). "Sala de Terapias" já está criada.
 - **Criar Horário Disponível** — escolhe a terapia, o professor, a sala, o dia e a hora; esse
   horário aparece de imediato em `/terapias` como uma data marcada a dourado no calendário do
   cliente. Ao ser reservado e pago, o horário fica "cross-off" automaticamente (estado muda

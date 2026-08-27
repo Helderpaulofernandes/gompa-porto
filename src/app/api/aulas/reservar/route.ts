@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
-import { getClassSchedule, getEffectiveCapacity } from "@/lib/classSchedule";
-import { getServiceBySlug } from "@/lib/services";
+import { getClassBySlug } from "@/lib/classSchedule";
 import { getPlanBySlug } from "@/lib/plans";
 
 const bodySchema = z.object({
@@ -24,9 +23,8 @@ export async function POST(req: NextRequest) {
 
   const { classSlug, classDate, name, email, phone, paymentType, planSlug } = parsed.data;
 
-  const schedule = getClassSchedule(classSlug);
-  const service = getServiceBySlug(classSlug);
-  if (!schedule || !service) {
+  const classDef = await getClassBySlug(classSlug);
+  if (!classDef || !classDef.active) {
     return NextResponse.json({ error: "Aula não encontrada." }, { status: 404 });
   }
 
@@ -35,13 +33,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Data inválida." }, { status: 400 });
   }
 
-  const [taken, capacity] = await Promise.all([
-    prisma.seatReservation.count({
-      where: { classSlug, classDate: date, status: { in: ["pendente", "confirmado"] } },
-    }),
-    getEffectiveCapacity(classSlug),
-  ]);
-  if (taken >= capacity) {
+  const taken = await prisma.seatReservation.count({
+    where: { classSlug, classDate: date, status: { in: ["pendente", "confirmado"] } },
+  });
+  if (taken >= classDef.capacity) {
     return NextResponse.json({ error: "Já não há lugares disponíveis para esta aula." }, { status: 409 });
   }
 
@@ -68,9 +63,9 @@ export async function POST(req: NextRequest) {
           {
             price_data: {
               currency: "eur",
-              unit_amount: schedule.dropInPriceCents,
+              unit_amount: classDef.dropInPriceCents,
               product_data: {
-                name: `${service.name} — ${dateLabel}`,
+                name: `${classDef.name} — ${dateLabel}`,
                 description: "Reserva de lugar avulsa",
               },
             },

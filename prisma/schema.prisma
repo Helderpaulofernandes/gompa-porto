@@ -51,10 +51,25 @@ model SeatReservation {
   @@index([classSlug, classDate])
 }
 
-model ClassConfig {
-  slug      String   @id
-  capacity  Int
-  updatedAt DateTime @updatedAt
+model ClassDefinition {
+  id               String         @id @default(cuid())
+  slug             String         @unique
+  name             String
+  description      String
+  capacity         Int
+  dropInPriceCents Int
+  durationMinutes  Int            @default(60)
+  active           Boolean        @default(true)
+  createdAt        DateTime       @default(now())
+  slots            ClassSlotDef[]
+}
+
+model ClassSlotDef {
+  id      String          @id @default(cuid())
+  classId String
+  weekday Int
+  time    String
+  class   ClassDefinition @relation(fields: [classId], references: [id], onDelete: Cascade)
 }
 
 model Teacher {
@@ -68,6 +83,7 @@ model Teacher {
 model Room {
   id        String        @id @default(cuid())
   name      String
+  active    Boolean       @default(true)
   createdAt DateTime      @default(now())
   slots     TherapySlot[]
 }
