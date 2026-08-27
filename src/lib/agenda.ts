@@ -2,7 +2,7 @@ import { addDays, startOfDay } from "date-fns";
 import { prisma } from "@/lib/prisma";
 import { getUpcomingOccurrences } from "@/lib/occurrences";
 import { getActiveClasses } from "@/lib/classSchedule";
-import { getServiceBySlug } from "@/lib/services";
+import { getAllServices } from "@/lib/services";
 
 const DAYS_AHEAD = 21;
 
@@ -78,11 +78,12 @@ export async function getAgendaEvents(filter: { teacherId?: string; roomId?: str
     },
     include: { teacher: true, room: true },
   });
+  const serviceNameBySlug = new Map((await getAllServices()).map((s) => [s.slug, s.name]));
   for (const s of therapySlots) {
     events.push({
       id: `terapia-${s.id}`,
       type: "terapia",
-      name: getServiceBySlug(s.serviceSlug)?.name ?? s.serviceSlug,
+      name: serviceNameBySlug.get(s.serviceSlug) ?? s.serviceSlug,
       date: s.date,
       durationMinutes: s.durationMinutes,
       teacherId: s.teacherId,

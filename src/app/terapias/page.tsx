@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import TherapyCard from "@/components/TherapyCard";
-import { services } from "@/lib/services";
+import { getActiveServices } from "@/lib/services";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -9,7 +9,8 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default function TerapiasPage() {
+export default async function TerapiasPage() {
+  const services = await getActiveServices();
   const terapias = services.filter((s) => s.category === "terapia");
 
   return (

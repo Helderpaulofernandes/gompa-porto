@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { services, categoryLabels, type Service } from "@/lib/services";
+import { categoryLabels, type ServiceCategory } from "@/lib/services";
 
 const WEEKDAYS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
-const SERVICE_CATEGORIES: Service["category"][] = ["aula", "evento", "curso"];
+const SERVICE_CATEGORIES: ServiceCategory[] = ["aula", "evento", "curso"];
+
+type ServiceOption = { slug: string; name: string; description: string; category: ServiceCategory };
 
 type Slot = { id: string; weekday: number | null; specificDate: Date | null; time: string };
 type RoomOption = { id: string; name: string };
@@ -298,10 +300,12 @@ export default function AdminClassManager({
   classes,
   rooms,
   teachers,
+  services,
 }: {
   classes: ClassDef[];
   rooms: RoomOption[];
   teachers: TeacherOption[];
+  services: ServiceOption[];
 }) {
   const router = useRouter();
   const [serviceSlug, setServiceSlug] = useState("");

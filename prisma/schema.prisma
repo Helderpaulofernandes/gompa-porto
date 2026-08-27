@@ -123,6 +123,23 @@ model TherapySettings {
   lunchEnd     String?
 }
 
+model Service {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  name            String
+  category        String
+  schedule        String
+  duration        String?
+  priceLabel      String
+  description     String
+  photo           String?
+  bookable        Boolean  @default(true)
+  active          Boolean  @default(true)
+  priceCents      Int?
+  durationMinutes Int?
+  createdAt       DateTime @default(now())
+}
+
 model TherapySlot {
   id              String   @id @default(cuid())
   teacherId       String

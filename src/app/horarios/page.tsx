@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import ClassCard, { type ClassCardData } from "@/components/ClassCard";
-import { services, getServiceBySlug } from "@/lib/services";
+import { getActiveServices } from "@/lib/services";
 import { site } from "@/lib/site";
 import { getActiveClasses, scheduleTextFromSlots } from "@/lib/classSchedule";
 
@@ -12,6 +12,8 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function HorariosPage() {
+  const services = await getActiveServices();
+  const photoBySlug = new Map(services.map((s) => [s.slug, s.photo]));
   const allClasses = await getActiveClasses();
   // Eventos/cursos pontuais definitivos vivem em /cursos-e-retiros, não aqui;
   // entradas só-EOI (publicCalendar=false) não têm calendário público.
@@ -22,7 +24,7 @@ export default async function HorariosPage() {
     name: c.name,
     description: c.description,
     scheduleText: scheduleTextFromSlots(c.slots),
-    photo: getServiceBySlug(c.slug)?.photo,
+    photo: photoBySlug.get(c.slug) ?? undefined,
     hasCalendar: true,
   }));
 
@@ -34,7 +36,7 @@ export default async function HorariosPage() {
       name: s.name,
       description: s.description,
       scheduleText: s.schedule,
-      photo: s.photo,
+      photo: s.photo ?? undefined,
       hasCalendar: false,
     }));
 

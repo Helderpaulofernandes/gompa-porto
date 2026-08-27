@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { computeTherapyCandidates } from "@/lib/therapyAvailability";
-import { getTherapyPriceCents, getTherapyDurationMinutes } from "@/lib/therapyPricing";
+import { getServiceBySlug } from "@/lib/services";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
 
-  const priceCents = getTherapyPriceCents(slug);
-  const durationMinutes = getTherapyDurationMinutes(slug);
+  const service = await getServiceBySlug(slug);
+  const priceCents = service?.priceCents;
+  const durationMinutes = service?.durationMinutes;
   if (!priceCents || !durationMinutes) {
     return NextResponse.json({ error: "Terapia não encontrada." }, { status: 404 });
   }

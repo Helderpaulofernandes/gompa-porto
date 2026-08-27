@@ -3,11 +3,12 @@ import { prisma } from "@/lib/prisma";
 import AdminLoginForm from "@/components/AdminLoginForm";
 import AdminLogoutButton from "@/components/AdminLogoutButton";
 import { formatPrice } from "@/lib/products";
-import { getServiceBySlug, services } from "@/lib/services";
+import { getAllServices } from "@/lib/services";
 import { formatLisbon } from "@/lib/occurrences";
 import { getAllClasses } from "@/lib/classSchedule";
 import AdminClassManager from "@/components/AdminClassManager";
 import AdminTherapyManager from "@/components/AdminTherapyManager";
+import AdminServiceManager from "@/components/AdminServiceManager";
 import AdminRemoveSlotButton from "@/components/AdminRemoveSlotButton";
 import AdminAgenda from "@/components/AdminAgenda";
 
@@ -25,7 +26,7 @@ export default async function AdminPage() {
     );
   }
 
-  const [bookings, orders, reservations, classes, teachers, rooms, therapySlots, windows, settingsRow] =
+  const [bookings, orders, reservations, classes, teachers, rooms, therapySlots, windows, settingsRow, allServices] =
     await Promise.all([
       prisma.booking.findMany({ orderBy: { createdAt: "desc" }, take: 100 }),
       prisma.order.findMany({ orderBy: { createdAt: "desc" }, take: 100 }),
@@ -48,14 +49,20 @@ export default async function AdminPage() {
         orderBy: [{ weekday: "asc" }, { startTime: "asc" }],
       }),
       prisma.therapySettings.findUnique({ where: { id: "singleton" } }),
+      getAllServices(),
     ]);
 
   const settings = settingsRow ?? { breakMinutes: 15, lunchStart: null, lunchEnd: null };
 
-  const therapyServices = services
-    .filter((s) => s.category === "terapia")
+  const therapyServices = allServices
+    .filter((s) => s.category === "terapia" && s.active)
     .map((s) => ({ slug: s.slug, name: s.name }));
 
+  const bookableServices = allServices
+    .filter((s) => s.category !== "terapia" && s.active)
+    .map((s) => ({ slug: s.slug, name: s.name, description: s.description, category: s.category }));
+
+  const serviceNameBySlug = new Map(allServices.map((s) => [s.slug, s.name]));
   const classNameBySlug = new Map(classes.map((c) => [c.slug, c.name]));
 
   return (
@@ -86,7 +93,18 @@ export default async function AdminPage() {
           Aparecem de imediato no calendário de reserva em /horarios.
         </p>
         <div className="mt-4">
-          <AdminClassManager classes={classes} rooms={rooms} teachers={teachers} />
+          <AdminClassManager classes={classes} rooms={rooms} teachers={teachers} services={bookableServices} />
+        </div>
+      </section>
+
+      <section className="mt-12">
+        <h2 className="text-xl font-semibold text-ink">Serviços</h2>
+        <p className="mt-1 text-sm text-ink/60">
+          Nome, descrição, preço (texto), imagem e (para terapias) o preço/duração reais usados no
+          pagamento online. Aparecem em /terapias, /horarios, /cursos-e-retiros e /marcacoes.
+        </p>
+        <div className="mt-4">
+          <AdminServiceManager services={allServices} />
         </div>
       </section>
 
@@ -122,7 +140,7 @@ export default async function AdminPage() {
             <tbody>
               {therapySlots.map((s) => (
                 <tr key={s.id} className="border-t border-gold/20">
-                  <td className="px-4 py-3">{getServiceBySlug(s.serviceSlug)?.name ?? s.serviceSlug}</td>
+                  <td className="px-4 py-3">{serviceNameBySlug.get(s.serviceSlug) ?? s.serviceSlug}</td>
                   <td className="px-4 py-3 whitespace-nowrap">{formatLisbon(s.date)}</td>
                   <td className="px-4 py-3">{s.teacher.name}</td>
                   <td className="px-4 py-3">{s.room.name}</td>

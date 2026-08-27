@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   }
 
   const { servico, nome, email, telefone, data, hora, mensagem } = parsed.data;
-  const service = getServiceBySlug(servico);
+  const service = await getServiceBySlug(servico);
 
   const booking = await prisma.booking.create({
     data: {

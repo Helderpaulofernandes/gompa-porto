@@ -3,7 +3,6 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
 import { getServiceBySlug } from "@/lib/services";
-import { getTherapyPriceCents, getTherapyDurationMinutes } from "@/lib/therapyPricing";
 import { computeTherapyCandidates } from "@/lib/therapyAvailability";
 
 const bodySchema = z.object({
@@ -23,9 +22,9 @@ export async function POST(req: NextRequest) {
   }
   const { serviceSlug, teacherId, roomId, isoDate, name, email, phone } = parsed.data;
 
-  const service = getServiceBySlug(serviceSlug);
-  const priceCents = getTherapyPriceCents(serviceSlug);
-  const durationMinutes = getTherapyDurationMinutes(serviceSlug);
+  const service = await getServiceBySlug(serviceSlug);
+  const priceCents = service?.priceCents;
+  const durationMinutes = service?.durationMinutes;
   if (!service || !priceCents || !durationMinutes) {
     return NextResponse.json({ error: "Terapia não encontrada." }, { status: 404 });
   }

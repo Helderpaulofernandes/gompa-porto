@@ -1,7 +1,7 @@
 import { addDays, startOfDay } from "date-fns";
 import { fromZonedTime, toZonedTime } from "date-fns-tz";
 import { prisma } from "@/lib/prisma";
-import { getTherapyDurationMinutes } from "@/lib/therapyPricing";
+import { getServiceBySlug } from "@/lib/services";
 
 const TIME_ZONE = "Europe/Lisbon";
 const WEEKS_AHEAD = 4;
@@ -42,7 +42,8 @@ async function getSettings() {
  * terapias já marcadas E por aulas de grupo com horário fixo na mesma sala).
  */
 export async function computeTherapyCandidates(serviceSlug: string): Promise<Candidate[]> {
-  const duration = getTherapyDurationMinutes(serviceSlug);
+  const service = await getServiceBySlug(serviceSlug);
+  const duration = service?.durationMinutes;
   if (!duration) return [];
 
   const [teachers, settings] = await Promise.all([

@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { services } from "@/lib/services";
 
 type SmartRoutes = Record<string, "aula" | "evento" | "terapia">;
+type ServiceOption = { slug: string; name: string };
 
 const smartRouteHref: Record<"aula" | "evento" | "terapia", string> = {
   aula: "/horarios",
@@ -15,9 +15,11 @@ const smartRouteHref: Record<"aula" | "evento" | "terapia", string> = {
 export default function BookingForm({
   initialSlug,
   smartRoutes,
+  services,
 }: {
   initialSlug?: string;
   smartRoutes: SmartRoutes;
+  services: ServiceOption[];
 }) {
   const [selected, setSelected] = useState(initialSlug ?? "");
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");

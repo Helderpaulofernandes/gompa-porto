@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import BookingForm from "@/components/BookingForm";
 import { site } from "@/lib/site";
 import { getActiveClasses } from "@/lib/classSchedule";
-import { therapyPricing } from "@/lib/therapyPricing";
+import { getActiveServices } from "@/lib/services";
 
 export const metadata: Metadata = {
   title: `Marcações — ${site.name}`,
@@ -14,14 +14,16 @@ export default async function MarcacoesPage({
   searchParams: Promise<{ servico?: string }>;
 }) {
   const { servico } = await searchParams;
-  const classes = await getActiveClasses();
+  const [classes, services] = await Promise.all([getActiveClasses(), getActiveServices()]);
 
   const smartRoutes: Record<string, "aula" | "evento" | "terapia"> = {};
   for (const c of classes) {
     if (!c.publicCalendar) continue;
     smartRoutes[c.slug] = c.recurring ? "aula" : "evento";
   }
-  for (const slug of Object.keys(therapyPricing)) smartRoutes[slug] = "terapia";
+  for (const s of services) {
+    if (s.category === "terapia" && s.priceCents && s.durationMinutes) smartRoutes[s.slug] = "terapia";
+  }
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-16">
@@ -34,7 +36,7 @@ export default async function MarcacoesPage({
       </p>
 
       <div className="mt-8">
-        <BookingForm initialSlug={servico} smartRoutes={smartRoutes} />
+        <BookingForm initialSlug={servico} smartRoutes={smartRoutes} services={services} />
       </div>
     </div>
   );

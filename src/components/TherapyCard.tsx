@@ -4,14 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import TherapyCalendar from "@/components/TherapyCalendar";
 import type { Service } from "@/lib/services";
-import { getTherapyPriceCents } from "@/lib/therapyPricing";
 import { formatPrice } from "@/lib/products";
 
 export default function TherapyCard({ therapy }: { therapy: Service }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
-  const priceCents = getTherapyPriceCents(therapy.slug);
+  const priceCents = therapy.priceCents;
 
   useEffect(() => {
     if (searchParams.get("abrir") === therapy.slug) {

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import ClassCard, { type ClassCardData } from "@/components/ClassCard";
-import { services } from "@/lib/services";
+import { getActiveServices } from "@/lib/services";
 import { site } from "@/lib/site";
 import { getActiveClasses, scheduleTextFromSlots } from "@/lib/classSchedule";
 
@@ -12,6 +12,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function CursosERetirosPage() {
+  const services = await getActiveServices();
   const allClasses = await getActiveClasses();
   // Datas definitivas e publicamente reserváveis (posted por nós no backoffice) —
   // pedidos de interesse (EOI) continuam a usar o formulário estático abaixo.
