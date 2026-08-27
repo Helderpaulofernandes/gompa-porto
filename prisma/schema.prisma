@@ -60,6 +60,9 @@ model ClassDefinition {
   dropInPriceCents Int
   durationMinutes  Int            @default(60)
   active           Boolean        @default(true)
+  recurring        Boolean        @default(true)
+  endDate          DateTime?
+  publicCalendar   Boolean        @default(true)
   roomId           String?
   teacherId        String?
   createdAt        DateTime       @default(now())
@@ -69,11 +72,12 @@ model ClassDefinition {
 }
 
 model ClassSlotDef {
-  id      String          @id @default(cuid())
-  classId String
-  weekday Int
-  time    String
-  class   ClassDefinition @relation(fields: [classId], references: [id], onDelete: Cascade)
+  id           String          @id @default(cuid())
+  classId      String
+  weekday      Int?
+  specificDate DateTime?
+  time         String
+  class        ClassDefinition @relation(fields: [classId], references: [id], onDelete: Cascade)
 }
 
 model Teacher {

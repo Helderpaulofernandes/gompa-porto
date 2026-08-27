@@ -15,6 +15,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
     return NextResponse.json({
       capacity: classDef.capacity,
       dropInPriceCents: classDef.dropInPriceCents,
+      recurring: classDef.recurring,
       occurrences: [],
     });
   }
@@ -44,6 +45,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
   return NextResponse.json({
     capacity: classDef.capacity,
     dropInPriceCents: classDef.dropInPriceCents,
+    recurring: classDef.recurring,
     occurrences: result,
   });
 }

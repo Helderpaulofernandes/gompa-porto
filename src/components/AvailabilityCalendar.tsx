@@ -93,10 +93,13 @@ export default function AvailabilityCalendar({
         {days.map((day) => {
           const dayEntries = entriesByDay.get(format(day, "yyyy-MM-dd")) ?? [];
           const hasAvailable = dayEntries.some((e) => e.available);
+          const hasAny = dayEntries.length > 0;
           const inMonth = isSameMonth(day, month);
           const isPast = isBefore(day, today);
           const isSelected = selectedDay && isSameDay(day, selectedDay);
-          const clickable = inMonth && !isPast && hasAvailable;
+          // Even a fully-booked day stays clickable, so people can see it was full
+          // ("Esgotado") rather than the day just silently disappearing.
+          const clickable = inMonth && !isPast && hasAny;
 
           return (
             <button
@@ -108,9 +111,11 @@ export default function AvailabilityCalendar({
                   ? "text-transparent"
                   : isSelected
                     ? "bg-maroon font-semibold text-cream"
-                    : clickable
+                    : hasAvailable
                       ? "bg-gold-light/40 font-semibold text-maroon hover:bg-gold-light/70"
-                      : "text-ink/25"
+                      : clickable
+                        ? "border border-ink/15 text-ink/40 hover:border-ink/30"
+                        : "text-ink/25"
               }`}
             >
               {format(day, "d")}

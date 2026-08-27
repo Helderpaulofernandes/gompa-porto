@@ -16,6 +16,7 @@ type OccurrenceApi = {
 type ApiResponse = {
   capacity: number;
   dropInPriceCents: number;
+  recurring: boolean;
   occurrences: OccurrenceApi[];
 };
 
@@ -75,6 +76,9 @@ export default function SeatCalendar({ classSlug, className }: { classSlug: stri
   }
 
   const plan = getPlanBySlug(RECURRING_PLAN_SLUG);
+  // Aulas semanais recorrentes leem melhor como "Turma Completa"; eventos
+  // pontuais (retiros, cursos) leem melhor como "Esgotado".
+  const fullLabel = data.recurring ? "Turma Completa" : "Esgotado";
 
   const entries: TimeEntry[] = data.occurrences.map((o) => {
     const date = new Date(o.isoDate);
@@ -85,7 +89,7 @@ export default function SeatCalendar({ classSlug, className }: { classSlug: stri
       date,
       label: full ? time : `${time} · ${o.seatsAvailable} de ${data.capacity} lugares`,
       available: !full,
-      unavailableLabel: full ? "Esgotado" : undefined,
+      unavailableLabel: full ? fullLabel : undefined,
     };
   });
 
