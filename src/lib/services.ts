@@ -7,6 +7,7 @@ export type Service = {
   priceLabel: string;
   description: string;
   bookable: boolean;
+  photo?: string;
 };
 
 /**
@@ -25,6 +26,7 @@ export const services: Service[] = [
     description:
       "Prática de yoga tibetano orientada para o equilíbrio entre corpo, energia e mente, incluindo movimentos suaves, respiração e relaxamento.",
     bookable: true,
+    photo: "/images/yoga-tibetano.jpg",
   },
   {
     slug: "pratica-meditacao",
@@ -35,6 +37,7 @@ export const services: Service[] = [
     description:
       "Sessão semanal de meditação guiada, aberta a iniciantes e praticantes com experiência.",
     bookable: true,
+    photo: "/images/pratica-meditacao.jpg",
   },
   {
     slug: "tog-chod",
@@ -45,6 +48,7 @@ export const services: Service[] = [
     description:
       "Treino individual e personalizado de Tog Chöd (Espada de Sabedoria), adaptado ao ritmo e objetivos de cada praticante.",
     bookable: true,
+    photo: "/images/tog-chod.jpg",
   },
 
   // Terapias

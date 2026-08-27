@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { services } from "@/lib/services";
 import { site } from "@/lib/site";
@@ -25,7 +26,16 @@ export default function HorariosPage() {
             key={aula.slug}
             className="flex flex-col justify-between gap-4 rounded-2xl border border-gold/30 bg-white p-6 sm:flex-row sm:items-center"
           >
-            <div>
+            {aula.photo && (
+              <Image
+                src={aula.photo}
+                alt={aula.name}
+                width={96}
+                height={96}
+                className="h-24 w-24 shrink-0 rounded-xl object-cover"
+              />
+            )}
+            <div className="flex-1">
               <h2 className="text-lg font-semibold text-maroon">{aula.name}</h2>
               <p className="mt-1 text-sm text-ink/70">{aula.schedule}</p>
               <p className="mt-1 text-sm text-ink/60">{aula.description}</p>

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { site } from "@/lib/site";
@@ -20,7 +21,15 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 border-b border-gold/30 bg-cream/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-        <Link href="/" className="flex items-baseline gap-2" onClick={() => setOpen(false)}>
+        <Link href="/" className="flex items-center gap-3" onClick={() => setOpen(false)}>
+          <Image
+            src="/logo.png"
+            alt={site.name}
+            width={44}
+            height={44}
+            className="h-11 w-11 rounded-full"
+            priority
+          />
           <span className="text-xl font-semibold tracking-wide text-maroon">{site.name}</span>
         </Link>
 

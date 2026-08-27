@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -10,6 +11,17 @@ export default function OndeEstamosPage() {
     <div className="mx-auto max-w-5xl px-4 py-16">
       <p className="text-sm font-semibold uppercase tracking-widest text-gold">Onde estamos</p>
       <h1 className="mt-2 text-4xl font-semibold text-maroon">Visite-nos</h1>
+
+      <div className="mt-8 overflow-hidden rounded-2xl border border-gold/30">
+        <Image
+          src="/images/gompa-espaco.jpg"
+          alt="O espaço da Gompa Porto"
+          width={1000}
+          height={650}
+          className="h-72 w-full object-cover sm:h-96"
+          priority
+        />
+      </div>
 
       <div className="mt-10 grid gap-10 lg:grid-cols-2">
         <div>
