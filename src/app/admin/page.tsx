@@ -9,6 +9,7 @@ import { getAllClasses } from "@/lib/classSchedule";
 import AdminClassManager from "@/components/AdminClassManager";
 import AdminTherapyManager from "@/components/AdminTherapyManager";
 import AdminRemoveSlotButton from "@/components/AdminRemoveSlotButton";
+import AdminAgenda from "@/components/AdminAgenda";
 
 export const metadata = { title: "Admin — Gompa Porto" };
 export const dynamic = "force-dynamic";
@@ -65,13 +66,27 @@ export default async function AdminPage() {
       </div>
 
       <section className="mt-10">
+        <h2 className="text-xl font-semibold text-ink">Agenda</h2>
+        <p className="mt-1 text-sm text-ink/60">
+          O que está agendado, quando, com quem e quantas pessoas — por professor ou por sala,
+          juntando aulas de grupo e terapias.
+        </p>
+        <div className="mt-4">
+          <AdminAgenda
+            teachers={teachers.filter((t) => t.active).map((t) => ({ id: t.id, name: t.name }))}
+            rooms={rooms.filter((r) => r.active).map((r) => ({ id: r.id, name: r.name }))}
+          />
+        </div>
+      </section>
+
+      <section className="mt-12">
         <h2 className="text-xl font-semibold text-ink">Aulas Semanais</h2>
         <p className="mt-1 text-sm text-ink/60">
           Crie novas aulas, ajuste lugares/preço das existentes, ou gira os horários semanais.
           Aparecem de imediato no calendário de reserva em /horarios.
         </p>
         <div className="mt-4">
-          <AdminClassManager classes={classes} rooms={rooms} />
+          <AdminClassManager classes={classes} rooms={rooms} teachers={teachers} />
         </div>
       </section>
 

@@ -7,6 +7,7 @@ const WEEKDAYS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "
 
 type Slot = { id: string; weekday: number; time: string };
 type RoomOption = { id: string; name: string };
+type TeacherOption = { id: string; name: string };
 type ClassDef = {
   id: string;
   slug: string;
@@ -17,14 +18,24 @@ type ClassDef = {
   durationMinutes: number;
   active: boolean;
   roomId: string | null;
+  teacherId: string | null;
   slots: Slot[];
 };
 
-function ExistingClassRow({ classDef, rooms }: { classDef: ClassDef; rooms: RoomOption[] }) {
+function ExistingClassRow({
+  classDef,
+  rooms,
+  teachers,
+}: {
+  classDef: ClassDef;
+  rooms: RoomOption[];
+  teachers: TeacherOption[];
+}) {
   const router = useRouter();
   const [capacity, setCapacity] = useState(classDef.capacity);
   const [priceEuros, setPriceEuros] = useState((classDef.dropInPriceCents / 100).toFixed(2));
   const [roomId, setRoomId] = useState(classDef.roomId ?? "");
+  const [teacherId, setTeacherId] = useState(classDef.teacherId ?? "");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -43,6 +54,7 @@ function ExistingClassRow({ classDef, rooms }: { classDef: ClassDef; rooms: Room
         capacity,
         dropInPriceCents: Math.round(parseFloat(priceEuros || "0") * 100),
         roomId: roomId || null,
+        teacherId: teacherId || null,
       }),
     });
     setSaving(false);
@@ -148,6 +160,21 @@ function ExistingClassRow({ classDef, rooms }: { classDef: ClassDef; rooms: Room
             ))}
           </select>
         </label>
+        <label className="text-xs text-ink/60">
+          Professor:{" "}
+          <select
+            value={teacherId}
+            onChange={(e) => setTeacherId(e.target.value)}
+            className="rounded-lg border border-gold/40 px-2 py-1 text-sm"
+          >
+            <option value="">Sem professor definido</option>
+            {teachers.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </label>
         <button
           onClick={saveMeta}
           disabled={saving}
@@ -200,7 +227,15 @@ function ExistingClassRow({ classDef, rooms }: { classDef: ClassDef; rooms: Room
   );
 }
 
-export default function AdminClassManager({ classes, rooms }: { classes: ClassDef[]; rooms: RoomOption[] }) {
+export default function AdminClassManager({
+  classes,
+  rooms,
+  teachers,
+}: {
+  classes: ClassDef[];
+  rooms: RoomOption[];
+  teachers: TeacherOption[];
+}) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -208,6 +243,7 @@ export default function AdminClassManager({ classes, rooms }: { classes: ClassDe
   const [priceEuros, setPriceEuros] = useState("9.00");
   const [duration, setDuration] = useState(60);
   const [roomId, setRoomId] = useState("");
+  const [teacherId, setTeacherId] = useState("");
   const [slots, setSlots] = useState<{ weekday: number; time: string }[]>([{ weekday: 2, time: "19:30" }]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -233,6 +269,7 @@ export default function AdminClassManager({ classes, rooms }: { classes: ClassDe
           dropInPriceCents: Math.round(parseFloat(priceEuros || "0") * 100),
           durationMinutes: duration,
           roomId: roomId || null,
+          teacherId: teacherId || null,
           slots,
         }),
       });
@@ -254,7 +291,7 @@ export default function AdminClassManager({ classes, rooms }: { classes: ClassDe
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-2">
         {classes.map((c) => (
-          <ExistingClassRow key={c.id} classDef={c} rooms={rooms} />
+          <ExistingClassRow key={c.id} classDef={c} rooms={rooms} teachers={teachers} />
         ))}
       </div>
 
@@ -315,6 +352,21 @@ export default function AdminClassManager({ classes, rooms }: { classes: ClassDe
               {rooms.map((r) => (
                 <option key={r.id} value={r.id}>
                   {r.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-xs text-ink/60">
+            Professor:{" "}
+            <select
+              value={teacherId}
+              onChange={(e) => setTeacherId(e.target.value)}
+              className="rounded-lg border border-gold/40 px-2 py-1 text-sm"
+            >
+              <option value="">Sem professor definido</option>
+              {teachers.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
                 </option>
               ))}
             </select>

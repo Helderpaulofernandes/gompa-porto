@@ -64,19 +64,31 @@ export async function computeTherapyCandidates(serviceSlug: string): Promise<Can
   const rangeStart = startOfDay(nowInLisbon);
   const rangeEnd = addDays(rangeStart, WEEKS_AHEAD * 7);
 
-  // Class blocks per room+weekday (recurring), independent of specific dates.
+  // Class blocks (recurring), independent of specific dates — checked both by room
+  // (nobody else can use that room while a class is on) and by teacher (that specific
+  // person can't be double-booked into a therapy while they're teaching a class
+  // elsewhere).
   const classSlots = await prisma.classSlotDef.findMany({
     include: { class: true },
-    where: { class: { active: true, roomId: { not: null } } },
+    where: { class: { active: true } },
   });
   const classBlocksByRoomWeekday = new Map<string, { start: number; end: number }[]>();
+  const classBlocksByTeacherWeekday = new Map<string, { start: number; end: number }[]>();
   for (const cs of classSlots) {
-    const key = `${cs.class.roomId}:${cs.weekday}`;
     const start = timeToMinutes(cs.time);
     const end = start + cs.class.durationMinutes;
-    const list = classBlocksByRoomWeekday.get(key) ?? [];
-    list.push({ start, end });
-    classBlocksByRoomWeekday.set(key, list);
+    if (cs.class.roomId) {
+      const key = `${cs.class.roomId}:${cs.weekday}`;
+      const list = classBlocksByRoomWeekday.get(key) ?? [];
+      list.push({ start, end });
+      classBlocksByRoomWeekday.set(key, list);
+    }
+    if (cs.class.teacherId) {
+      const key = `${cs.class.teacherId}:${cs.weekday}`;
+      const list = classBlocksByTeacherWeekday.get(key) ?? [];
+      list.push({ start, end });
+      classBlocksByTeacherWeekday.set(key, list);
+    }
   }
 
   const candidates: Candidate[] = [];
@@ -93,14 +105,17 @@ export async function computeTherapyCandidates(serviceSlug: string): Promise<Can
         const m = String(day.getMonth() + 1).padStart(2, "0");
         const d = String(day.getDate()).padStart(2, "0");
 
-        const classBlocks = classBlocksByRoomWeekday.get(`${window.roomId}:${window.weekday}`) ?? [];
+        const roomClassBlocks = classBlocksByRoomWeekday.get(`${window.roomId}:${window.weekday}`) ?? [];
+        const teacherClassBlocks = classBlocksByTeacherWeekday.get(`${teacher.id}:${window.weekday}`) ?? [];
 
         for (let start = windowStart; start + duration <= windowEnd; start += step) {
           const end = start + duration;
 
           const hitsLunch =
             lunchStartMin !== null && lunchEndMin !== null && overlaps(start, end, lunchStartMin, lunchEndMin);
-          const hitsClass = classBlocks.some((b) => overlaps(start, end, b.start, b.end));
+          const hitsClass =
+            roomClassBlocks.some((b) => overlaps(start, end, b.start, b.end)) ||
+            teacherClassBlocks.some((b) => overlaps(start, end, b.start, b.end));
 
           const candidateDate = fromZonedTime(
             `${y}-${m}-${d}T${minutesToTime(start)}:00`,

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import SeatCalendar from "@/components/SeatCalendar";
@@ -16,9 +17,19 @@ export type ClassCardData = {
 
 export default function ClassCard({ aula }: { aula: ClassCardData }) {
   const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get("abrir") === aula.slug && aula.hasCalendar) {
+      setOpen(true);
+      ref.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   return (
-    <div className="rounded-2xl border border-gold/30 bg-white p-6">
+    <div ref={ref} className="rounded-2xl border border-gold/30 bg-white p-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         {aula.photo && (
           <Image

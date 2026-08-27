@@ -218,6 +218,7 @@ export default function AdminTherapyManager({
   const [endTime, setEndTime] = useState("18:00");
   const [savingWindow, setSavingWindow] = useState(false);
   const [windowError, setWindowError] = useState("");
+  const [windowWarning, setWindowWarning] = useState("");
 
   const [breakMinutes, setBreakMinutes] = useState(settings.breakMinutes);
   const [lunchStart, setLunchStart] = useState(settings.lunchStart ?? "");
@@ -255,6 +256,7 @@ export default function AdminTherapyManager({
     if (!winTeacherId || !winRoomId) return;
     setSavingWindow(true);
     setWindowError("");
+    setWindowWarning("");
     try {
       const res = await fetch("/api/admin/therapy/windows", {
         method: "POST",
@@ -263,6 +265,7 @@ export default function AdminTherapyManager({
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Erro ao criar janela.");
+      if (json.warning) setWindowWarning(json.warning);
       router.refresh();
     } catch (err) {
       setWindowError(err instanceof Error ? err.message : "Erro inesperado.");
@@ -471,6 +474,7 @@ export default function AdminTherapyManager({
           />
         </div>
         {windowError && <p className="mt-2 text-xs text-red-600">{windowError}</p>}
+        {windowWarning && <p className="mt-2 text-xs text-amber-700">⚠ {windowWarning}</p>}
         <button
           onClick={createWindow}
           disabled={savingWindow}

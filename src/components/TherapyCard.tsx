@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import TherapyCalendar from "@/components/TherapyCalendar";
 import type { Service } from "@/lib/services";
 import { getTherapyPriceCents } from "@/lib/therapyPricing";
@@ -8,10 +9,20 @@ import { formatPrice } from "@/lib/products";
 
 export default function TherapyCard({ therapy }: { therapy: Service }) {
   const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const searchParams = useSearchParams();
   const priceCents = getTherapyPriceCents(therapy.slug);
 
+  useEffect(() => {
+    if (searchParams.get("abrir") === therapy.slug) {
+      setOpen(true);
+      ref.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   return (
-    <div className="rounded-2xl border border-gold/30 bg-white p-6">
+    <div ref={ref} className="rounded-2xl border border-gold/30 bg-white p-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div className="flex-1">
           <h2 className="text-lg font-semibold text-maroon">{therapy.name}</h2>

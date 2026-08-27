@@ -7,6 +7,8 @@ export const metadata: Metadata = {
   title: `Terapias — ${site.name}`,
 };
 
+export const dynamic = "force-dynamic";
+
 export default function TerapiasPage() {
   const terapias = services.filter((s) => s.category === "terapia");
 

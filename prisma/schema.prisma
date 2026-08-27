@@ -61,9 +61,11 @@ model ClassDefinition {
   durationMinutes  Int            @default(60)
   active           Boolean        @default(true)
   roomId           String?
+  teacherId        String?
   createdAt        DateTime       @default(now())
   slots            ClassSlotDef[]
   room             Room?          @relation(fields: [roomId], references: [id])
+  teacher          Teacher?       @relation(fields: [teacherId], references: [id])
 }
 
 model ClassSlotDef {
@@ -82,6 +84,7 @@ model Teacher {
   createdAt DateTime             @default(now())
   slots     TherapySlot[]
   windows   AvailabilityWindow[]
+  classes   ClassDefinition[]
 }
 
 model Room {

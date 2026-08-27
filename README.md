@@ -16,8 +16,12 @@ para marcações e registo de encomendas.
 - `/cursos-e-retiros` — Cursos, retiros e eventos mensais
 - `/loja` — Compra de packs de aulas e vouchers (Stripe Checkout)
 - `/assinaturas` — Planos de membro mensais (Stripe Subscriptions)
-- `/marcacoes` — Formulário geral de marcação (pode pré-selecionar o serviço via `?servico=slug`)
-- `/admin` — Painel protegido por palavra-passe com a lista de marcações e pagamentos
+- `/marcacoes` — Formulário geral, mas "inteligente": se o serviço escolhido já tem calendário
+  próprio (aula ou terapia), mostra um botão a encaminhar para `/horarios` ou `/terapias` (que
+  abrem automaticamente o calendário certo via `?abrir=slug`) em vez de um formulário genérico.
+  Só as ofertas sem calendário (Tog Chöd, cursos, retiros, eventos) usam o formulário.
+- `/admin` — Painel protegido por palavra-passe: Agenda unificada, gestão de aulas/terapias,
+  marcações, reservas e pagamentos.
 
 Conteúdo editável em `src/lib/`:
 - `site.ts` — nome, morada, telefone, email, mapa
@@ -35,11 +39,15 @@ publicar.**
 As aulas com horário semanal fixo (Yoga Tibetano, Prática de Meditação, e qualquer outra que
 crie) já não vivem no código — são geridas inteiramente em `/admin → Aulas Semanais`:
 
-- **Criar Nova Aula Semanal** — nome, descrição, lugares, preço da aula avulsa, duração e um
-  ou mais horários semanais (dia da semana + hora). Aparece de imediato em `/horarios`.
-- Em cada aula existente pode ajustar lugares e preço, desativar (deixa de aparecer no site
-  sem apagar o histórico) ou remover (só permitido se ainda não tiver reservas), e
-  adicionar/remover horários semanais individuais.
+- **Criar Nova Aula Semanal** — nome, descrição, lugares, preço da aula avulsa, duração, sala,
+  professor, e um ou mais horários semanais (dia da semana + hora). Aparece de imediato em
+  `/horarios`.
+- Em cada aula existente pode ajustar lugares, preço, sala e professor, desativar (deixa de
+  aparecer no site sem apagar o histórico) ou remover (só permitido se ainda não tiver
+  reservas), e adicionar/remover horários semanais individuais.
+- Atribuir sala e professor a uma aula não é só cosmético: é o que permite ao motor de
+  disponibilidade das terapias (abaixo) saber que essa sala/professor está ocupado nesse
+  horário todas as semanas.
 
 Em `/horarios`, cada aula com horário mostra um botão "Ver disponibilidade e reservar" que
 abre um calendário com as próximas datas e os lugares ainda disponíveis (contados a partir da
@@ -82,9 +90,17 @@ o site calcula os horários concretos automaticamente:
   - já tenha uma marcação (do mesmo professor OU da mesma sala) — o tempo "trancado" por uma
     marcação é a duração da terapia + o intervalo padrão;
   - caia dentro da pausa de almoço;
-  - coincida com uma aula de grupo com horário fixo na mesma sala (ex.: se a Sala de Grupo
+  - coincida com uma aula de grupo com horário fixo na **mesma sala** (ex.: se a Sala de Grupo
     está ocupada pelo Yoga Tibetano das 19h30 às 21h00 à terça-feira, nenhuma terapia pode
-    ser marcada nessa sala nesse intervalo, seja qual for o professor).
+    ser marcada nessa sala nesse intervalo, seja qual for o professor);
+  - coincida com uma aula de grupo que o **mesmo professor** dá, mesmo que seja noutra sala
+    (ex.: se o Anu dá a Prática de Meditação às 19h30 de quarta na Sala de Grupo, ele não
+    aparece disponível para terapias às 19h30 de quarta em nenhuma sala, incluindo a Sala de
+    Terapias).
+
+Ao criar uma janela de disponibilidade que se sobrepõe a uma aula desse professor, a resposta
+inclui um aviso nesse sentido (não bloqueia a criação — a janela continua válida para o resto
+do horário, só esse troço fica indisponível automaticamente).
 
 Duração e preço de cada terapia estão em `src/lib/therapyPricing.ts` (valores provisórios —
 ver comentário no ficheiro).
@@ -92,6 +108,20 @@ ver comentário no ficheiro).
 O componente `AvailabilityCalendar` (mês com dias a dourado quando há vagas, lista de horários
 do dia selecionado) é partilhado entre `/horarios` e `/terapias` — dias/horas sem vagas
 aparecem cinzentos e desativados.
+
+### Agenda (visão unificada por professor / por sala)
+
+No topo de `/admin`, a secção **Agenda** junta aulas de grupo e terapias numa só vista
+cronológica (próximos 21 dias), com duas visões:
+
+- **Por Professor** — escolhe um professor, vê tudo o que tem agendado (aulas que dá +
+  terapias marcadas), com hora, nome do evento, sala, e um selo colorido (dourado = aula de
+  grupo, verde = terapia confirmada, âmbar = terapia pendente de pagamento) e o número de
+  participantes (`3/14 lugares` numa aula, nome do cliente numa terapia).
+- **Por Sala** — o mesmo, mas por sala em vez de professor — mostra tudo o que está marcado
+  nessa sala, seja aula ou terapia, de qualquer professor.
+
+A fonte de dados é `src/lib/agenda.ts` (`getAgendaEvents`), servida por `/api/admin/agenda`.
 
 ## Configuração local
 
