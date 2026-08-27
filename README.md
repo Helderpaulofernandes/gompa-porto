@@ -11,7 +11,8 @@ para marcações e registo de encomendas.
 - `/onde-estamos` — Morada, contactos e mapa
 - `/horarios` — Horário semanal das aulas, com calendário de reserva de lugar e pagamento
   (Yoga Tibetano e Prática de Meditação)
-- `/terapias` — Terapias individuais (marcação por formulário)
+- `/terapias` — Terapias individuais, com calendário de horários disponíveis por
+  professor/sala e pagamento
 - `/cursos-e-retiros` — Cursos, retiros e eventos mensais
 - `/loja` — Compra de packs de aulas e vouchers (Stripe Checkout)
 - `/assinaturas` — Planos de membro mensais (Stripe Subscriptions)
@@ -44,11 +45,36 @@ partir das reservas na tabela `SeatReservation`). Ao reservar, a pessoa escolhe 
 O preço da aula avulsa está calculado ~15% acima do valor por aula do plano mais barato, para
 que a assinatura seja sempre a opção mais vantajosa — ver comentário em `classSchedule.ts`.
 
-Tog Chöd e as restantes ofertas (terapias, cursos, retiros, eventos mensais) não têm horário
-fixo nem preço definido (são "por marcação" / "sob consulta" / "datas a anunciar"), por isso
-mantêm o formulário de marcação simples em vez do calendário — assim que houver horários,
-capacidades e preços reais para essas aulas/sessões, o mesmo sistema de calendário pode ser
-estendido a elas.
+Tog Chöd e as restantes ofertas (cursos, retiros, eventos mensais) não têm horário fixo nem
+preço definido (são "por marcação" / "sob consulta" / "datas a anunciar"), por isso mantêm o
+formulário de marcação simples em vez do calendário.
+
+### Terapias: professores, salas e horários (backoffice)
+
+Ao contrário das aulas (horário semanal fixo), as terapias são "por marcação": o horário
+depende de quem está disponível, em que sala, e quando. Em `/admin`:
+
+- **Professores** — Anu Biak e Sónia já estão criados (via `prisma/seed-therapy.mjs`); pode
+  adicionar mais ou desativar um professor sem o apagar (mantém o histórico de sessões já
+  feitas).
+- **Salas** — apenas a "Sala de Terapias" existe por agora; pode adicionar mais se o espaço
+  crescer.
+- **Criar Horário Disponível** — escolhe a terapia, o professor, a sala, o dia e a hora; esse
+  horário aparece de imediato em `/terapias` como uma data marcada a dourado no calendário do
+  cliente. Ao ser reservado e pago, o horário fica "cross-off" automaticamente (estado muda
+  para `pendente` e depois `confirmado` via webhook do Stripe) e deixa de aparecer como
+  disponível a outros clientes — a tabela `TherapySlot` funciona simultaneamente como a agenda
+  e o registo da marcação.
+
+O preço por sessão está em `src/lib/therapyPricing.ts` (atualmente 35€ para todas, um valor
+provisório — ver comentário no ficheiro). A atribuição de quem faz cada terapia é feita
+livremente ao criar cada horário (não há uma regra fixa "só a Sónia pode fazer X"), mas hoje
+em dia a Gompa Porto trabalha com Anu em Terapia do Som/Tsa Lung Healing e Sónia em
+Shiatsu/Auriculoterapia/Reflexologia.
+
+O componente `AvailabilityCalendar` (mês com dias a dourado quando há vagas, lista de horários
+do dia selecionado) é partilhado entre `/horarios` e `/terapias` — dias/horas sem vagas
+aparecem cinzentos e desativados.
 
 ## Configuração local
 

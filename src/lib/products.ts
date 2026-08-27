@@ -30,15 +30,6 @@ export const products: Product[] = [
     currency: "eur",
     provisional: true,
   },
-  {
-    slug: "voucher-terapia",
-    name: "Voucher de Terapia Individual",
-    description:
-      "Voucher para uma sessão à escolha (Terapia do Som, Tsa Lung Healing, Shiatsu, Auriculoterapia ou Reflexologia). Após a compra entraremos em contacto para agendar.",
-    priceCents: 3500,
-    currency: "eur",
-    provisional: true,
-  },
 ];
 
 export function getProductBySlug(slug: string) {

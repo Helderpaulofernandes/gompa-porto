@@ -7,6 +7,9 @@ import { getServiceBySlug } from "@/lib/services";
 import { formatLisbon } from "@/lib/occurrences";
 import { classSchedules, getAllEffectiveCapacities } from "@/lib/classSchedule";
 import AdminClassCapacity from "@/components/AdminClassCapacity";
+import AdminTherapyManager from "@/components/AdminTherapyManager";
+import AdminRemoveSlotButton from "@/components/AdminRemoveSlotButton";
+import { services } from "@/lib/services";
 
 export const metadata = { title: "Admin — Gompa Porto" };
 export const dynamic = "force-dynamic";
@@ -22,7 +25,7 @@ export default async function AdminPage() {
     );
   }
 
-  const [bookings, orders, reservations, capacities] = await Promise.all([
+  const [bookings, orders, reservations, capacities, teachers, rooms, therapySlots] = await Promise.all([
     prisma.booking.findMany({ orderBy: { createdAt: "desc" }, take: 100 }),
     prisma.order.findMany({ orderBy: { createdAt: "desc" }, take: 100 }),
     prisma.seatReservation.findMany({
@@ -31,7 +34,19 @@ export default async function AdminPage() {
       take: 100,
     }),
     getAllEffectiveCapacities(),
+    prisma.teacher.findMany({ orderBy: { createdAt: "asc" } }),
+    prisma.room.findMany({ orderBy: { createdAt: "asc" } }),
+    prisma.therapySlot.findMany({
+      where: { date: { gte: new Date() } },
+      orderBy: { date: "asc" },
+      include: { teacher: true, room: true },
+      take: 100,
+    }),
   ]);
+
+  const therapyServices = services
+    .filter((s) => s.category === "terapia")
+    .map((s) => ({ slug: s.slug, name: s.name }));
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-12">
@@ -54,6 +69,64 @@ export default async function AdminPage() {
               capacity={capacities[c.slug] ?? c.defaultCapacity}
             />
           ))}
+        </div>
+      </section>
+
+      <section className="mt-12">
+        <h2 className="text-xl font-semibold text-ink">Terapias — Professores, Salas e Horários</h2>
+        <p className="mt-1 text-sm text-ink/60">
+          Crie horários disponíveis para as terapias; ficam visíveis em /terapias e são
+          reservados automaticamente quando alguém paga.
+        </p>
+        <div className="mt-4">
+          <AdminTherapyManager teachers={teachers} rooms={rooms} therapyServices={therapyServices} />
+        </div>
+
+        <div className="mt-6 overflow-x-auto rounded-2xl border border-gold/30">
+          <table className="w-full min-w-[760px] text-left text-sm">
+            <thead className="bg-cream text-ink/60">
+              <tr>
+                <th className="px-4 py-3">Terapia</th>
+                <th className="px-4 py-3">Data</th>
+                <th className="px-4 py-3">Professor</th>
+                <th className="px-4 py-3">Sala</th>
+                <th className="px-4 py-3">Cliente</th>
+                <th className="px-4 py-3">Estado</th>
+                <th className="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {therapySlots.map((s) => (
+                <tr key={s.id} className="border-t border-gold/20">
+                  <td className="px-4 py-3">{getServiceBySlug(s.serviceSlug)?.name ?? s.serviceSlug}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">{formatLisbon(s.date)}</td>
+                  <td className="px-4 py-3">{s.teacher.name}</td>
+                  <td className="px-4 py-3">{s.room.name}</td>
+                  <td className="px-4 py-3">
+                    {s.clientName ? (
+                      <>
+                        <div>{s.clientName}</div>
+                        <div className="text-ink/60">{s.clientEmail}</div>
+                      </>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  <td className="px-4 py-3">{s.status}</td>
+                  <td className="px-4 py-3">
+                    {s.status === "disponivel" && <AdminRemoveSlotButton id={s.id} />}
+                  </td>
+                </tr>
+              ))}
+              {therapySlots.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-4 py-6 text-center text-ink/50">
+                    Sem horários de terapia criados ainda.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </section>
 

@@ -56,3 +56,38 @@ model ClassConfig {
   capacity  Int
   updatedAt DateTime @updatedAt
 }
+
+model Teacher {
+  id        String        @id @default(cuid())
+  name      String
+  active    Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  slots     TherapySlot[]
+}
+
+model Room {
+  id        String        @id @default(cuid())
+  name      String
+  createdAt DateTime      @default(now())
+  slots     TherapySlot[]
+}
+
+model TherapySlot {
+  id              String   @id @default(cuid())
+  teacherId       String
+  roomId          String
+  serviceSlug     String
+  date            DateTime
+  durationMinutes Int      @default(60)
+  status          String   @default("disponivel")
+  clientName      String?
+  clientEmail     String?
+  clientPhone     String?
+  stripeSessionId String?  @unique
+  createdAt       DateTime @default(now())
+
+  teacher Teacher @relation(fields: [teacherId], references: [id])
+  room    Room    @relation(fields: [roomId], references: [id])
+
+  @@index([serviceSlug, date])
+}

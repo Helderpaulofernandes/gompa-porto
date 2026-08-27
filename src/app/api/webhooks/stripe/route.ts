@@ -31,9 +31,11 @@ export async function POST(req: NextRequest) {
         ? `Reserva de lugar: ${session.metadata?.classSlug ?? "aula"}`
         : kind === "reserva-assinatura"
           ? `Reserva + Assinatura: ${session.metadata?.planSlug ?? "plano"}`
-          : session.mode === "subscription"
-            ? `Assinatura: ${session.metadata?.slug ?? "desconhecido"}`
-            : `Produto: ${session.metadata?.slug ?? "desconhecido"}`;
+          : kind === "terapia"
+            ? `Terapia: ${session.metadata?.serviceSlug ?? "sessão"}`
+            : session.mode === "subscription"
+              ? `Assinatura: ${session.metadata?.slug ?? "desconhecido"}`
+              : `Produto: ${session.metadata?.slug ?? "desconhecido"}`;
 
     await prisma.order.upsert({
       where: { stripeSessionId: session.id },
@@ -52,6 +54,13 @@ export async function POST(req: NextRequest) {
 
     if (kind === "reserva" || kind === "reserva-assinatura") {
       await prisma.seatReservation.updateMany({
+        where: { stripeSessionId: session.id },
+        data: { status: "confirmado" },
+      });
+    }
+
+    if (kind === "terapia") {
+      await prisma.therapySlot.updateMany({
         where: { stripeSessionId: session.id },
         data: { status: "confirmado" },
       });

@@ -5,87 +5,71 @@ import { formatInTimeZone } from "date-fns-tz";
 import { pt } from "date-fns/locale";
 import AvailabilityCalendar, { type TimeEntry } from "@/components/AvailabilityCalendar";
 import { formatPrice } from "@/lib/products";
-import { getPlanBySlug } from "@/lib/plans";
 
-type OccurrenceApi = {
+type SlotApi = {
+  id: string;
   isoDate: string;
-  seatsAvailable: number;
-  seatsTaken: number;
+  teacherName: string;
+  available: boolean;
 };
 
 type ApiResponse = {
-  capacity: number;
-  dropInPriceCents: number;
-  occurrences: OccurrenceApi[];
+  priceCents: number | null;
+  slots: SlotApi[];
 };
 
-const RECURRING_PLAN_SLUG = "ilimitado";
-
-export default function SeatCalendar({ classSlug, className }: { classSlug: string; className: string }) {
+export default function TherapyCalendar({ serviceSlug, className }: { serviceSlug: string; className: string }) {
   const [data, setData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<TimeEntry | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [submitting, setSubmitting] = useState<"once" | "membership" | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch(`/api/aulas/${classSlug}/ocorrencias`)
+    fetch(`/api/terapias/${serviceSlug}/vagas`)
       .then((res) => res.json())
       .then((json) => setData(json))
       .catch(() => setError("Não foi possível carregar o calendário."))
       .finally(() => setLoading(false));
-  }, [classSlug]);
+  }, [serviceSlug]);
 
-  async function handleReserve(paymentType: "once" | "membership") {
+  async function handleReserve() {
     if (!selected || !name || !email) return;
-    setSubmitting(paymentType);
+    setSubmitting(true);
     setError("");
     try {
-      const res = await fetch("/api/aulas/reservar", {
+      const res = await fetch("/api/terapias/reservar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          classSlug,
-          classDate: selected.key,
-          name,
-          email,
-          phone,
-          paymentType,
-          planSlug: paymentType === "membership" ? RECURRING_PLAN_SLUG : undefined,
-        }),
+        body: JSON.stringify({ slotId: selected.key, name, email, phone }),
       });
       const json = await res.json();
       if (!res.ok || !json.url) throw new Error(json.error ?? "Não foi possível processar a reserva.");
       window.location.href = json.url;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro inesperado.");
-      setSubmitting(null);
+      setSubmitting(false);
     }
   }
 
-  if (loading) {
-    return <p className="text-sm text-ink/50">A carregar calendário…</p>;
+  if (loading) return <p className="text-sm text-ink/50">A carregar calendário…</p>;
+
+  if (!data || data.slots.length === 0) {
+    return <p className="text-sm text-ink/50">Sem horários disponíveis de momento — contacte-nos para combinar.</p>;
   }
 
-  if (!data || data.occurrences.length === 0) {
-    return <p className="text-sm text-ink/50">Sem próximas datas disponíveis de momento.</p>;
-  }
-
-  const plan = getPlanBySlug(RECURRING_PLAN_SLUG);
-
-  const entries: TimeEntry[] = data.occurrences.map((o) => {
-    const date = new Date(o.isoDate);
+  const entries: TimeEntry[] = data.slots.map((s) => {
+    const date = new Date(s.isoDate);
     const time = formatInTimeZone(date, "Europe/Lisbon", "HH:mm", { locale: pt });
-    const full = o.seatsAvailable === 0;
     return {
-      key: o.isoDate,
+      key: s.id,
       date,
-      label: full ? time : `${time} · ${o.seatsAvailable} de ${data.capacity} lugares`,
-      available: !full,
-      unavailableLabel: full ? "Esgotado" : undefined,
+      label: s.available ? `${time} — ${s.teacherName}` : time,
+      available: s.available,
+      unavailableLabel: s.available ? undefined : "Reservado",
     };
   });
 
@@ -132,32 +116,20 @@ export default function SeatCalendar({ classSlug, className }: { classSlug: stri
 
           {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-            <button
-              onClick={() => handleReserve("once")}
-              disabled={!name || !email || submitting !== null}
-              className="flex-1 rounded-full bg-maroon px-5 py-2.5 text-sm font-semibold text-cream transition hover:bg-maroon-dark disabled:opacity-60"
-            >
-              {submitting === "once"
-                ? "A processar…"
-                : `Pagar só esta aula — ${formatPrice(data.dropInPriceCents)}`}
-            </button>
-            {plan && (
-              <button
-                onClick={() => handleReserve("membership")}
-                disabled={!name || !email || submitting !== null}
-                className="flex-1 rounded-full border border-maroon px-5 py-2.5 text-sm font-semibold text-maroon transition hover:bg-maroon hover:text-cream disabled:opacity-60"
-              >
-                {submitting === "membership"
-                  ? "A processar…"
-                  : `Assinar ${plan.name} e reservar — ${formatPrice(plan.priceCents)}/mês`}
-              </button>
-            )}
-          </div>
-          <p className="mt-3 text-xs text-ink/50">
-            Reservar aula a aula sai mais caro do que assinar um plano mensal — veja todos os
-            planos em Assinaturas.
-          </p>
+          <button
+            onClick={handleReserve}
+            disabled={!name || !email || submitting}
+            className="mt-4 w-full rounded-full bg-maroon px-5 py-2.5 text-sm font-semibold text-cream transition hover:bg-maroon-dark disabled:opacity-60 sm:w-auto"
+          >
+            {submitting
+              ? "A processar…"
+              : data.priceCents
+                ? `Reservar e pagar — ${formatPrice(data.priceCents)}`
+                : "Reservar"}
+          </button>
+          {data.priceCents && (
+            <p className="mt-2 text-xs text-ink/50">* Valor provisório, sujeito a confirmação.</p>
+          )}
         </div>
       )}
     </div>
