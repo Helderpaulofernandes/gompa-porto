@@ -24,6 +24,16 @@ export async function POST(req: NextRequest) {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
+    const kind = session.metadata?.kind;
+
+    const description =
+      kind === "reserva"
+        ? `Reserva de lugar: ${session.metadata?.classSlug ?? "aula"}`
+        : kind === "reserva-assinatura"
+          ? `Reserva + Assinatura: ${session.metadata?.planSlug ?? "plano"}`
+          : session.mode === "subscription"
+            ? `Assinatura: ${session.metadata?.slug ?? "desconhecido"}`
+            : `Produto: ${session.metadata?.slug ?? "desconhecido"}`;
 
     await prisma.order.upsert({
       where: { stripeSessionId: session.id },
@@ -32,16 +42,20 @@ export async function POST(req: NextRequest) {
         stripeSessionId: session.id,
         customerEmail: session.customer_details?.email ?? null,
         customerName: session.customer_details?.name ?? null,
-        description:
-          session.mode === "subscription"
-            ? `Assinatura: ${session.metadata?.slug ?? "desconhecido"}`
-            : `Produto: ${session.metadata?.slug ?? "desconhecido"}`,
+        description,
         amountTotal: session.amount_total ?? 0,
         currency: session.currency ?? "eur",
         mode: session.mode ?? "payment",
         status: "pago",
       },
     });
+
+    if (kind === "reserva" || kind === "reserva-assinatura") {
+      await prisma.seatReservation.updateMany({
+        where: { stripeSessionId: session.id },
+        data: { status: "confirmado" },
+      });
+    }
   }
 
   return NextResponse.json({ received: true });

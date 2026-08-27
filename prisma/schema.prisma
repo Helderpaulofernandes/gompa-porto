@@ -34,3 +34,25 @@ model Order {
   status          String   @default("pago")
   createdAt       DateTime @default(now())
 }
+
+model SeatReservation {
+  id              String    @id @default(cuid())
+  classSlug       String
+  classDate       DateTime
+  name            String
+  email           String
+  phone           String?
+  paymentType     String
+  planSlug        String?
+  stripeSessionId String?   @unique
+  status          String    @default("pendente")
+  createdAt       DateTime  @default(now())
+
+  @@index([classSlug, classDate])
+}
+
+model ClassConfig {
+  slug      String   @id
+  capacity  Int
+  updatedAt DateTime @updatedAt
+}

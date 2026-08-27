@@ -15,14 +15,6 @@ export type Product = {
 
 export const products: Product[] = [
   {
-    slug: "aula-avulsa",
-    name: "Aula Avulsa",
-    description: "Uma aula de Yoga Tibetano ou Prática de Meditação, à escolha.",
-    priceCents: 1000,
-    currency: "eur",
-    provisional: true,
-  },
-  {
     slug: "pack-5-aulas",
     name: "Pack de 5 Aulas",
     description: "5 aulas de Yoga Tibetano e/ou Prática de Meditação, a usar em 2 meses.",

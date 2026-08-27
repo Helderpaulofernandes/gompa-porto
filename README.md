@@ -9,7 +9,8 @@ para marcações e registo de encomendas.
 - `/` — Página inicial
 - `/sobre` — Sobre a escola
 - `/onde-estamos` — Morada, contactos e mapa
-- `/horarios` — Horário semanal das aulas
+- `/horarios` — Horário semanal das aulas, com calendário de reserva de lugar e pagamento
+  (Yoga Tibetano e Prática de Meditação)
 - `/terapias` — Terapias individuais (marcação por formulário)
 - `/cursos-e-retiros` — Cursos, retiros e eventos mensais
 - `/loja` — Compra de packs de aulas e vouchers (Stripe Checkout)
@@ -22,8 +23,32 @@ Conteúdo editável em `src/lib/`:
 - `services.ts` — aulas, terapias, eventos e cursos (nomes, horários, descrições)
 - `products.ts` — artigos da loja e preços
 - `plans.ts` — planos de assinatura e preços
+- `classSchedule.ts` — horário semanal, capacidade de lugares e preço da aula avulsa por
+  turma, usado pelo calendário de reserva em `/horarios`
 
-**Os preços em `products.ts` e `plans.ts` estão marcados como provisórios — edite antes de publicar.**
+**Os preços em `products.ts`, `plans.ts` e `classSchedule.ts` estão marcados como
+provisórios — edite antes de publicar.**
+
+### Reserva de lugar com calendário
+
+Em `/horarios`, o Yoga Tibetano e a Prática de Meditação (as aulas com horário semanal fixo)
+mostram um botão "Ver disponibilidade e reservar" que abre um calendário com as próximas
+datas e os lugares ainda disponíveis (capacidade definida em `classSchedule.ts`, contada a
+partir das reservas na tabela `SeatReservation`). Ao reservar, a pessoa escolhe entre:
+
+- **Pagar só esta aula** — pagamento único pelo preço de aula avulsa (Stripe Checkout, modo
+  `payment`).
+- **Assinar [plano] e reservar** — assina o plano de assinatura mensal indicado (por omissão,
+  "Ilimitado") e a aula fica automaticamente reservada (Stripe Checkout, modo `subscription`).
+
+O preço da aula avulsa está calculado ~15% acima do valor por aula do plano mais barato, para
+que a assinatura seja sempre a opção mais vantajosa — ver comentário em `classSchedule.ts`.
+
+Tog Chöd e as restantes ofertas (terapias, cursos, retiros, eventos mensais) não têm horário
+fixo nem preço definido (são "por marcação" / "sob consulta" / "datas a anunciar"), por isso
+mantêm o formulário de marcação simples em vez do calendário — assim que houver horários,
+capacidades e preços reais para essas aulas/sessões, o mesmo sistema de calendário pode ser
+estendido a elas.
 
 ## Configuração local
 
