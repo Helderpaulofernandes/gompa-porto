@@ -27,10 +27,11 @@ Conteúdo editável em `src/lib/`:
 
 ## Configuração local
 
-1. Copie `.env.example` para `.env` e preencha os valores (já existe um `.env` de desenvolvimento
-   com chaves de teste inválidas, apenas para a aplicação arrancar).
+1. `.env` já está configurado com a ligação real à base de dados Neon (ver secção
+   [Base de dados](#base-de-dados)) e chaves de teste para o resto — substitua-as pelas suas
+   conforme for configurando cada serviço.
 2. Instale dependências: `npm install`
-3. Gere a base de dados: `npx prisma generate && npx prisma db push`
+3. Gere o cliente Prisma: `npx prisma generate`
 4. Arranque o servidor: `npm run dev` e abra http://localhost:3000
 
 ## Configurar o Stripe (loja, assinaturas e pagamentos)
@@ -70,17 +71,31 @@ o cliente), já está integrado o [Resend](https://resend.com):
 
 ## Base de dados
 
-Por omissão usa SQLite (ficheiro `prisma/dev.db`), suficiente para começar. Para produção num
-serviço como a Vercel (sem sistema de ficheiros persistente), mude o `datasource` em
-`prisma/schema.prisma` para Postgres (por exemplo, [Neon](https://neon.tech) ou
-[Vercel Postgres](https://vercel.com/storage/postgres)) e atualize `DATABASE_URL`.
+A aplicação usa Postgres na [Neon](https://neon.tech) — projeto **Gompa Porto**
+(`royal-sky-19562474`) na organização **Gompa School**. `DATABASE_URL` (ligação com pooling,
+usada pela aplicação) e `DATABASE_URL_UNPOOLED` (ligação direta, usada pelas migrações) já
+estão configuradas em `prisma/schema.prisma`.
+
+Para trabalhar no projeto noutra máquina:
+
+1. `npx neon@latest auth` — inicia sessão na conta Neon.
+2. `npx neon@latest link --org-id org-young-sunset-11359312 --project-id royal-sky-19562474`
+3. `npx neon@latest checkout production` — associa o branch e escreve `DATABASE_URL` /
+   `DATABASE_URL_UNPOOLED` no `.env` automaticamente.
+4. `npx prisma generate`
+
+Alterações ao schema (`prisma/schema.prisma`) devem ser feitas com
+`npx prisma migrate dev --name descricao-da-alteracao`, que cria e aplica uma migração e
+atualiza `prisma/migrations/`. Em produção, use `npx prisma migrate deploy`.
 
 ## Publicar o site
 
 Este projeto está pronto a ser publicado na [Vercel](https://vercel.com) (criadores do Next.js):
 
-1. Suba o código para um repositório Git (GitHub/GitLab).
+1. Código já está em https://github.com/Helderpaulofernandes/gompa-porto.
 2. Importe o repositório na Vercel.
-3. Configure as variáveis de ambiente (`DATABASE_URL`, `STRIPE_SECRET_KEY`,
-   `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_SITE_URL`, `ADMIN_PASSWORD`) no painel da Vercel.
+3. Configure as variáveis de ambiente no painel da Vercel — copie os valores atuais do `.env`
+   local: `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
+   `NEXT_PUBLIC_SITE_URL`, `ADMIN_PASSWORD`, e opcionalmente `RESEND_API_KEY` /
+   `RESEND_FROM_EMAIL`.
 4. Ligue um domínio próprio (ex. gompaporto.pt) nas definições do projeto.
