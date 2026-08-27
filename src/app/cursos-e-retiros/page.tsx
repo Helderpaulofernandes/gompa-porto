@@ -1,24 +1,51 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import ClassCard, { type ClassCardData } from "@/components/ClassCard";
 import { services } from "@/lib/services";
 import { site } from "@/lib/site";
+import { getActiveClasses, scheduleTextFromSlots } from "@/lib/classSchedule";
 
 export const metadata: Metadata = {
   title: `Cursos e Retiros — ${site.name}`,
 };
 
-export default function CursosERetirosPage() {
-  const cursos = services.filter((s) => s.category === "curso");
-  const eventos = services.filter((s) => s.category === "evento");
+export const dynamic = "force-dynamic";
+
+export default async function CursosERetirosPage() {
+  const allClasses = await getActiveClasses();
+  // Datas definitivas e publicamente reserváveis (posted por nós no backoffice) —
+  // pedidos de interesse (EOI) continuam a usar o formulário estático abaixo.
+  const scheduledClasses = allClasses.filter((c) => !c.recurring && c.publicCalendar);
+  const scheduledSlugs = new Set(scheduledClasses.map((c) => c.slug));
+
+  const scheduledCards: ClassCardData[] = scheduledClasses.map((c) => ({
+    slug: c.slug,
+    name: c.name,
+    description: c.description,
+    scheduleText: scheduleTextFromSlots(c.slots),
+    hasCalendar: true,
+  }));
+
+  const cursos = services.filter((s) => s.category === "curso" && !scheduledSlugs.has(s.slug));
+  const eventos = services.filter((s) => s.category === "evento" && !scheduledSlugs.has(s.slug));
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-16">
       <p className="text-sm font-semibold uppercase tracking-widest text-gold">Formação</p>
       <h1 className="mt-2 text-4xl font-semibold text-maroon">Cursos e Retiros</h1>
       <p className="mt-4 text-ink/70">
-        Formações estruturadas e retiros de imersão. As datas são anunciadas com antecedência —
-        faça uma marcação para ficar a par das próximas edições ou reservar o seu lugar.
+        Formações estruturadas e retiros de imersão. Quando há uma data e local confirmados,
+        reserve diretamente com pagamento online; para as restantes ofertas, envie um pedido de
+        interesse e avisamos assim que houver datas marcadas.
       </p>
+
+      {scheduledCards.length > 0 && (
+        <div className="mt-10 space-y-4">
+          {scheduledCards.map((c) => (
+            <ClassCard key={c.slug} aula={c} />
+          ))}
+        </div>
+      )}
 
       <div className="mt-10 space-y-4">
         {cursos.map((c) => (

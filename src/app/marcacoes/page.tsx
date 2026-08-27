@@ -16,8 +16,11 @@ export default async function MarcacoesPage({
   const { servico } = await searchParams;
   const classes = await getActiveClasses();
 
-  const smartRoutes: Record<string, "aula" | "terapia"> = {};
-  for (const c of classes) smartRoutes[c.slug] = "aula";
+  const smartRoutes: Record<string, "aula" | "evento" | "terapia"> = {};
+  for (const c of classes) {
+    if (!c.publicCalendar) continue;
+    smartRoutes[c.slug] = c.recurring ? "aula" : "evento";
+  }
   for (const slug of Object.keys(therapyPricing)) smartRoutes[slug] = "terapia";
 
   return (

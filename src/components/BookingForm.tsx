@@ -4,7 +4,13 @@ import { useState } from "react";
 import Link from "next/link";
 import { services } from "@/lib/services";
 
-type SmartRoutes = Record<string, "aula" | "terapia">;
+type SmartRoutes = Record<string, "aula" | "evento" | "terapia">;
+
+const smartRouteHref: Record<"aula" | "evento" | "terapia", string> = {
+  aula: "/horarios",
+  evento: "/cursos-e-retiros",
+  terapia: "/terapias",
+};
 
 export default function BookingForm({
   initialSlug,
@@ -92,7 +98,7 @@ export default function BookingForm({
             disponíveis e reserve com pagamento online, sem precisar de esperar por confirmação.
           </p>
           <Link
-            href={smartType === "aula" ? `/horarios?abrir=${selected}` : `/terapias?abrir=${selected}`}
+            href={`${smartRouteHref[smartType]}?abrir=${selected}`}
             className="mt-4 inline-block rounded-full bg-maroon px-6 py-2.5 text-sm font-semibold text-cream hover:bg-maroon-dark"
           >
             Ver disponibilidade e reservar

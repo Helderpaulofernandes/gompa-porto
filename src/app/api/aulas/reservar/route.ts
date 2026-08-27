@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
           },
         ],
         success_url: `${origin}/sucesso?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${origin}/horarios`,
+        cancel_url: `${origin}${classDef.recurring ? "/horarios" : "/cursos-e-retiros"}`,
         metadata: { kind: "reserva", classSlug, classDate: date.toISOString() },
       });
       sessionId = session.id;
@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
           },
         ],
         success_url: `${origin}/sucesso?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${origin}/horarios`,
+        cancel_url: `${origin}${classDef.recurring ? "/horarios" : "/cursos-e-retiros"}`,
         metadata: { kind: "reserva-assinatura", classSlug, classDate: date.toISOString(), planSlug: plan.slug },
       });
       sessionId = session.id;

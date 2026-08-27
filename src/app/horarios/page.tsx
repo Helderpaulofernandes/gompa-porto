@@ -12,7 +12,10 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function HorariosPage() {
-  const classes = await getActiveClasses();
+  const allClasses = await getActiveClasses();
+  // Eventos/cursos pontuais definitivos vivem em /cursos-e-retiros, não aqui;
+  // entradas só-EOI (publicCalendar=false) não têm calendário público.
+  const classes = allClasses.filter((c) => c.recurring && c.publicCalendar);
 
   const scheduledCards: ClassCardData[] = classes.map((c) => ({
     slug: c.slug,
