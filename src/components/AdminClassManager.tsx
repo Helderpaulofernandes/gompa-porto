@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 const WEEKDAYS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
-type Slot = { id: string; weekday: number; time: string };
+type Slot = { id: string; weekday: number | null; specificDate: Date | null; time: string };
 type RoomOption = { id: string; name: string };
 type TeacherOption = { id: string; name: string };
 type ClassDef = {
@@ -193,7 +193,10 @@ function ExistingClassRow({
               key={s.id}
               className="flex items-center gap-1 rounded-full border border-gold/40 px-2 py-1 text-xs text-ink"
             >
-              {WEEKDAYS[s.weekday]}, {s.time}
+              {s.weekday !== null
+                ? WEEKDAYS[s.weekday]
+                : s.specificDate?.toLocaleDateString("pt-PT", { day: "numeric", month: "long" })}
+              , {s.time}
               <button onClick={() => removeSlot(s.id)} className="text-red-600" aria-label="Remover horário">
                 ×
               </button>

@@ -75,6 +75,9 @@ export async function computeTherapyCandidates(serviceSlug: string): Promise<Can
   const classBlocksByRoomWeekday = new Map<string, { start: number; end: number }[]>();
   const classBlocksByTeacherWeekday = new Map<string, { start: number; end: number }[]>();
   for (const cs of classSlots) {
+    // Once-off (specificDate) class slots aren't weekday-recurring, so they
+    // can't be folded into these weekday block maps — skipped for now.
+    if (cs.weekday === null) continue;
     const start = timeToMinutes(cs.time);
     const end = start + cs.class.durationMinutes;
     if (cs.class.roomId) {

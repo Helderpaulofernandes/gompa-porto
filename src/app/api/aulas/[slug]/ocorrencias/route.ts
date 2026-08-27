@@ -10,7 +10,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
     return NextResponse.json({ error: "Aula não encontrada." }, { status: 404 });
   }
 
-  const occurrences = getUpcomingOccurrences(classDef.slots);
+  const occurrences = getUpcomingOccurrences(classDef.slots, 5, classDef.endDate);
   if (occurrences.length === 0) {
     return NextResponse.json({
       capacity: classDef.capacity,

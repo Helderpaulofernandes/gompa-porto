@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 
-export type ClassSlot = { weekday: number; time: string };
+export type ClassSlot = { weekday: number | null; specificDate: Date | null; time: string };
 
 const WEEKDAY_NAMES_PT = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
@@ -33,8 +33,16 @@ export async function getClassBySlug(slug: string) {
 export function scheduleTextFromSlots(slots: ClassSlot[]): string {
   return slots
     .slice()
-    .sort((a, b) => a.weekday - b.weekday || a.time.localeCompare(b.time))
-    .map((s) => `${WEEKDAY_NAMES_PT[s.weekday]}, ${s.time}`)
+    .sort((a, b) => {
+      const aKey = a.weekday ?? (a.specificDate?.getTime() ?? 0);
+      const bKey = b.weekday ?? (b.specificDate?.getTime() ?? 0);
+      return aKey - bKey || a.time.localeCompare(b.time);
+    })
+    .map((s) =>
+      s.weekday !== null
+        ? `${WEEKDAY_NAMES_PT[s.weekday]}, ${s.time}`
+        : `${s.specificDate?.toLocaleDateString("pt-PT", { day: "numeric", month: "long" })}, ${s.time}`
+    )
     .join(" · ");
 }
 

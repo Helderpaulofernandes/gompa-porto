@@ -37,7 +37,7 @@ export async function getAgendaEvents(filter: { teacherId?: string; roomId?: str
     if (filter.teacherId && c.teacherId !== filter.teacherId) continue;
     if (filter.roomId && c.roomId !== filter.roomId) continue;
 
-    const occurrences = getUpcomingOccurrences(c.slots, Math.ceil(DAYS_AHEAD / 7) + 1).filter(
+    const occurrences = getUpcomingOccurrences(c.slots, Math.ceil(DAYS_AHEAD / 7) + 1, c.endDate).filter(
       (o) => o.date <= rangeEnd
     );
     if (occurrences.length === 0) continue;
