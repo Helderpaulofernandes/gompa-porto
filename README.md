@@ -55,9 +55,18 @@ marcações recebidas e os pagamentos confirmados pelo Stripe (requer o webhook 
 
 ## Notificações por email
 
-Atualmente as marcações ficam apenas guardadas na base de dados e visíveis em `/admin`. Para
-receber um email automático a cada marcação, o mais simples é integrar um serviço como o
-[Resend](https://resend.com) na rota `src/app/api/bookings/route.ts`.
+Cada marcação fica sempre guardada na base de dados e visível em `/admin`, independentemente
+do email. Para receber também um email automático (para a Gompa Porto e uma confirmação para
+o cliente), já está integrado o [Resend](https://resend.com):
+
+1. Crie uma conta gratuita em https://resend.com e gere uma API key em **API Keys**.
+2. Coloque a chave em `RESEND_API_KEY` no `.env`.
+3. Para testar imediatamente, deixe `RESEND_FROM_EMAIL="Gompa Porto <onboarding@resend.dev>"`
+   (funciona sem configuração extra, mas os emails só chegam à morada usada para criar a conta
+   Resend). Para enviar para qualquer destinatário com o nome "Gompa Porto" no remetente, verifique
+   o vosso domínio em **Domains** no Resend e mude para
+   `RESEND_FROM_EMAIL="Gompa Porto <marcacoes@seudominio.pt>"`.
+4. Sem `RESEND_API_KEY` configurada, o envio de email é simplesmente ignorado — nada quebra.
 
 ## Base de dados
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getServiceBySlug } from "@/lib/services";
+import { sendBookingEmails } from "@/lib/email";
 
 const bodySchema = z.object({
   servico: z.string().min(1),
@@ -33,6 +34,16 @@ export async function POST(req: NextRequest) {
       preferredTime: hora || null,
       notes: mensagem || null,
     },
+  });
+
+  await sendBookingEmails({
+    serviceName: booking.serviceName,
+    name: booking.name,
+    email: booking.email,
+    phone: booking.phone,
+    preferredDate: booking.preferredDate,
+    preferredTime: booking.preferredTime,
+    notes: booking.notes,
   });
 
   return NextResponse.json({ ok: true, id: booking.id });
